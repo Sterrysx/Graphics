@@ -92,9 +92,7 @@ gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0);
 
 ---
 
-## 1.3-Iluminación
-
-Luces
+## 1.3-Iluminación (Modelo de Phong)
 
 Seguimos el modelo de iluminación de Phong. Este modelo describe el color de un punto en una superficie como la **suma de tres componentes de luz**:
 
@@ -102,121 +100,246 @@ La fórmula completa es:
 
 **$Color_{Final}$ = $Color_{Ambiental}$ + $Color_{Difuso}$ + $Color_{Especular}$**
 
+-----
 
 ### 1.3.1-Componente Ambiental (Ambient) $I_a K_a$
 
-* **¿Qué es?** Es una luz de fondo constante. Simula la luz indirecta que rebota por toda la escena, asegurando que las partes en sombra no sean completamente negras.
-* **Propiedades que necesita:**
-    * `matAmbient` ($K_a$): El **color ambiental del material** (cuánta luz ambiental refleja).
-    * `lightAmbient` ($I_a$): El **color de la luz ambiental** de la escena.
-* **Fórmula:**
+  * **¿Qué es?** Es una luz de fondo constante. Simula la luz indirecta que rebota por toda la escena, asegurando que las partes en sombra no sean completamente negras.
+  * **Propiedades que necesita:**
+      * `matAmbient` ($K_a$): El **color ambiental del material** (cuánta luz ambiental refleja).
+      * `lightAmbient` ($I_a$): El **color de la luz ambiental** de la escena.
+  * **Fórmula:**
     $Color_{Ambiental} = K_a \cdot I_a$
 
-En código:
+**En código:**
 
-``` glsl
-// uniform vec4 matAmbient;  // Ka
-// uniform vec4 lightAmbient; // Ia
+```glsl
+// --- 1. Ambient Component ---
+// Uniforms provided by the viewer
+// uniform vec4 matAmbient;  // Ka (Material Ambient Color)
+// uniform vec4 lightAmbient; // Ia (Light Ambient Color)
 
 vec4 Color_Ambiental = matAmbient * lightAmbient;
 ```
 
-**Si no hay luz ambiente, o se ignora, la empezamos en negro.**
-``` glsl
+**Si no hay luz ambiente (o se ignora, como en "Nlights"), la empezamos en negro.**
+
+```glsl
+// Start with black if ambient light is ignored
 vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
 ```
 
+-----
+
 ### 1.3.2-Componente Difusa (Diffuse) $K_d I_d (N \cdot L)$
 
-* **¿Qué es?** Es el **color base** del objeto. Simula cómo la luz se dispersa por igual en todas las direcciones desde una superficie mate (como papel o tiza).
-* **Propiedades que necesita:**
-    * `matDiffuse` ($K_d$): El **color difuso del material** (su color "real").
-    * `lightDiffuse` ($I_d$): El **color de la luz** principal.
-    * **N**: El vector **Normal** (unitario) de la superficie (hacia dónde "mira" la superficie).
-    * **L**: El vector **Luz** (unitario) (la dirección desde el punto hacia la fuente de luz).
-* **Fórmula:**
+  * **¿Qué es?** Es el **color base** del objeto. Simula cómo la luz se dispersa por igual en todas las direcciones desde una superficie mate (como papel o tiza).
+  * **Propiedades que necesita:**
+      * `matDiffuse` ($K_d$): El **color difuso del material** (su color "real").
+      * `lightDiffuse` ($I_d$): El **color de la luz** principal.
+      * **N**: El vector **Normal** (unitario) de la superficie (hacia dónde "mira" la superficie).
+      * **L**: El vector **Luz** (unitario) (la dirección desde el punto hacia la fuente de luz).
+  * **Fórmula:**
     $Color_{Difuso} = K_d \cdot I_d \cdot \max(0.0, N \cdot L)$
-    * **$(N \cdot L)$** es el producto escalar (`dot(N, L)`). Mide qué tan alineada está la superficie con la luz. Si es 1, la luz da de lleno. Si es 0, la luz pasa de refilón. Si es negativo, la luz está detrás y `max(0.0, ...)` lo convierte en 0.
 
-En código:
+**En código:**
 
-``` glsl
-// uniform vec4 matDiffuse;   // Kd
-// uniform vec4 lightDiffuse;  // Id
-// uniform float matShininess; // S
+```glsl
+// --- 2. Diffuse Component ---
+// Uniforms provided by the viewer
+// uniform vec4 matDiffuse;   // Kd (Material Diffuse Color)
+// uniform vec4 lightDiffuse;  // Id (Light Diffuse Color)
 //
-// Vectors (han d'estar normalitzats):
-// vec3 N; // Vector Normal (unitari)
-// vec3 L; // Vector Llum (unitari)
+// Required Vectors (must be normalized)
+// vec3 N; // Unit Normal Vector
+// vec3 L; // Unit Light Vector
 
 float NdotL = max(0.0, dot(N, L));
 vec4 Color_Difuso = matDiffuse * lightDiffuse * NdotL;
 ```
 
+-----
+
 ### 1.3.3-Componente Especular (Specular) $K_s I_s (R \cdot V)^S$
 
-* **¿Qué es?** Es el **brillo** o reflejo directo de la luz. Simula cómo la luz rebota en una superficie pulida (como metal o plástico).
-* **Propiedades que necesita:**
-    * `matSpecular` ($K_s$): El **color especular del material** (de qué color es el brillo).
-    * `lightSpecular` ($I_s$): El **color del brillo** de la luz.
-    * `matShininess` ($S$): La **brillantor** o "dureza" del reflejo (un número alto crea un punto de luz pequeño y nítido; un número bajo crea un brillo amplio y difuso).
-    * **V**: El vector **Vista** (unitario) (la dirección desde el punto hacia la cámara/ojo).
-    * **R**: El vector **Reflejo** (unitario) (la dirección en que la luz $L$ rebota sobre la normal $N$). Se calcula con `reflect(-L, N)`.
-* **Fórmula:**
+  * **¿Qué es?** Es el **brillo** o reflejo directo de la luz. Simula cómo la luz rebota en una superficie pulida (como metal o plástico).
+  * **Propiedades que necesita:**
+      * `matSpecular` ($K_s$): El **color especular del material** (de qué color es el brillo).
+      * `lightSpecular` ($I_s$): El **color del brillo** de la luz.
+      * `matShininess` ($S$): La **brillantor** o "dureza" del reflejo.
+      * **V**: El vector **Vista** (unitario) (la dirección desde el punto hacia la cámara/ojo).
+      * **R**: El vector **Reflejo** (unitario) (la dirección en que la luz $L$ rebota sobre la normal $N$).
+  * **Fórmula:**
     $Color_{Especular} = K_s \cdot I_s \cdot \text{pow}(\max(0.0, R \cdot V), S)$
-    * **$(R \cdot V)$** es el producto escalar (`dot(R, V)`). Mide qué tan alineado está tu ojo con el "rebote" de la luz. Si es 1, ves el reflejo de lleno.
 
-En código:
+**En código:**
 
-``` glsl
-// Propietats:
-// uniform vec4 matSpecular;  // Ks
-// uniform vec4 lightSpecular; // Is
-// uniform float matShininess; // S
+```glsl
+// --- 3. Specular Component ---
+// Uniforms provided by the viewer
+// uniform vec4 matSpecular;  // Ks (Material Specular Color)
+// uniform vec4 lightSpecular; // Is (Light Specular Color)
+// uniform float matShininess; // S  (Shininess factor)
 //
-// Vectors (han d'estar normalitzats):
-// vec3 N; // Vector Normal
-// vec3 L; // Vector Llum
-// vec3 V; // Vector Vista
-// vec3 R; // Vector Reflex (calculat)
+// Required Vectors (must be normalized)
+// vec3 N; // Unit Normal Vector
+// vec3 L; // Unit Light Vector
+// vec3 V; // Unit View Vector
 
-vec3 R = reflect(-L, N); // reflect() calcula el rebot de L sobre N
+// Calculate R (Reflection Vector)
+vec3 R = reflect(-L, N); // reflect() calculates the bounce of L on N
+
 float RdotV = max(0.0, dot(R, V));
-vec4 Color_Especular = matSpecular * lightSpecular * pow(RdotV, matShininess);
+
+// We only add specular if the light is hitting the surface
+vec4 Color_Especular = vec4(0.0);
+if (NdotL > 0.0) // NdotL was calculated in the Diffuse step
+{
+    Color_Especular = matSpecular * lightSpecular * pow(RdotV, matShininess);
+}
 ```
 
-### Resumen de Propiedades
+-----
 
-Para calcular la iluminación completa en un punto, necesitas saber:
+### 1.3.4-Requisitos: El Espacio de Coordenadas
 
-* **4 Vectores (en el mismo sistema de coordenadas, p.ej., Eye Space):**
-    * **N (Normal):** Hacia dónde mira la superficie.
-    * **L (Luz):** Hacia dónde está la luz.
-    * **V (Vista):** Hacia dónde está la cámara.
-    * **R (Reflejo):** Hacia dónde rebota la luz.
-* **Propiedades del Material (uniforms `mat...`):**
-    * $K_a$ (`matAmbient`): Color de fondo.
-    * $K_d$ (`matDiffuse`): Color base.
-    * $K_s$ (`matSpecular`): Color del brillo.
-    * $S$ (`matShininess`): Dureza del brillo.
-* **Propiedades de la Luz (uniforms `light...`):**
-    * $I_a$ (`lightAmbient`): Color de la luz ambiental.
-    * $I_d$ (`lightDiffuse`): Color de la luz difusa.
-    * $I_s$ (`lightSpecular`): Color de la luz especular.
-    * `lightPosition`: Posición de la luz (para calcular **L**).
+Esta es la parte más importante de la teoría. Para que las fórmulas `dot()` (producto escalar) funcionen, todos los vectores y posiciones **deben estar en el mismo sistema de coordenadas**.
 
-Con la fórmula final:
+El estándar de la industria (y el que usan tus ejercicios) es el **Eye Space** (Espacio de Cámara).
 
-``` glsl
-// El color final és la suma de les tres components
-vec4 finalColor = Color_Ambiental + Color_Difuso + Color_Especular;
+**Vertex Shader (VS) - Tareas (Esqueleto 2):**
+El VS debe calcular y pasar al FS las dos variables clave:
 
-// Assegurem que l'alfa sigui 1.0 (opac)
-finalColor.a = 1.0;
+1.  `v_normal_eye`: La normal del vértice en Eye Space.
+      * `v_normal_eye = normalize(normalMatrix * normal);`
+2.  `v_position_eye`: La posición del vértice en Eye Space.
+      * `vec4 pos_eye_4 = modelViewMatrix * vec4(vertex, 1.0);`
+      * `v_position_eye = vec3(pos_eye_4);`
+      * `gl_Position = projectionMatrix * pos_eye_4;`
+
+**Fragment Shader (FS) - Tareas:**
+El FS recibe estas variables (interpoladas) y debe declarar todos los `uniforms` necesarios.
+
+-----
+
+### 1.3.5-Código de Iluminación Completo (Per-Fragment)
+
+Este es el bloque de código completo para un **Fragment Shader (Esqueleto 2)** que calcula la iluminación Phong para una sola luz.
+
+```glsl
+#version 330 core
+
+// --- INPUTS (from Vertex Shader) ---
+in vec3 v_normal_eye;   // Interpolated Normal in Eye Space
+in vec3 v_position_eye; // Interpolated Position in Eye Space
+
+// --- UNIFORMS (from viewer) ---
+uniform vec4 lightAmbient;
+uniform vec4 lightDiffuse;
+uniform vec4 lightSpecular;
+uniform vec4 lightPosition;  // Light's position (in Eye Space)
+
+uniform vec4 matAmbient;
+uniform vec4 matDiffuse;
+uniform vec4 matSpecular;
+uniform float matShininess;
+
+// --- OUTPUT ---
+out vec4 fragColor;
+
+void main()
+{
+    // ==============================================================
+    // == PHONG LIGHTING CALCULATION ==
+    // ==============================================================
+
+    // --- 1. Get Normalized Vectors ---
+    // (We re-normalize them because interpolation can make them < 1.0)
+    
+    // N = Normal Vector
+    vec3 N = normalize(v_normal_eye);
+    
+    // V = View Vector (from fragment to camera at 0,0,0)
+    vec3 V = normalize(-v_position_eye);
+    
+    // L = Light Vector (from fragment to light)
+    vec3 L = normalize(vec3(lightPosition) - v_position_eye);
+
+    // R = Reflection Vector
+    vec3 R = reflect(-L, N);
+
+    // --- 2. Calculate Dot Products ---
+    float NdotL = max(0.0, dot(N, L));
+    float RdotV = max(0.0, dot(R, V));
+
+    // --- 3. Calculate Components ---
+    
+    // Ambient (Ka * Ia)
+    vec4 amb = matAmbient * lightAmbient;
+    
+    // Diffuse (Kd * Id * (N.L))
+    vec4 dif = matDiffuse * lightDiffuse * NdotL;
+    
+    // Specular (Ks * Is * (R.V)^S)
+    vec4 spec = vec4(0.0);
+    if (NdotL > 0.0) // Only add specular if light is hitting
+    {
+        spec = matSpecular * lightSpecular * pow(RdotV, matShininess);
+    }
+
+    // --- 4. Final Color ---
+    vec4 finalColor = amb + dif + spec;
+    finalColor.a = 1.0; // Ensure it's opaque
+
+    // ==============================================================
+
+    // --- Final Assignment ---
+    fragColor = finalColor;
+}
 ```
 
+Sin comentarios:
 
----
+```glsl
+in vec3 v_normal_eye;   // Interpolated Normal in Eye Space
+in vec3 v_position_eye; // Interpolated Position in Eye Space
+
+uniform vec4 lightAmbient;
+uniform vec4 lightDiffuse;
+uniform vec4 lightSpecular;
+uniform vec4 lightPosition;  
+uniform vec4 matAmbient;
+uniform vec4 matDiffuse;
+uniform vec4 matSpecular;
+uniform float matShininess;
+
+out vec4 fragColor;
+
+void main()
+{
+    // (We re-normalize them because interpolation can make them < 1.0)
+    vec3 N = normalize(v_normal_eye);
+    vec3 V = normalize(-v_position_eye);
+    vec3 L = normalize(vec3(lightPosition) - v_position_eye);
+    vec3 R = reflect(-L, N);
+
+    // --- 2. Calculate Dot Products ---
+    float NdotL = max(0.0, dot(N, L));
+    float RdotV = max(0.0, dot(R, V));
+
+    // --- 3. Calculate Components ---
+    vec4 amb = matAmbient * lightAmbient;
+    vec4 dif = matDiffuse * lightDiffuse * NdotL;
+    vec4 spec = vec4(0.0);
+    if (NdotL > 0.0) // Only add specular if light is hitting
+    {
+        spec = matSpecular * lightSpecular * pow(RdotV, matShininess);
+    }
+    vec4 finalColor = amb + dif + spec;
+    finalColor.a = 1.0; // Ensure it's opaque
+    fragColor = finalColor;
+}
+```
 
 # 2-Esqueletos
 
@@ -504,9 +627,120 @@ float angle = mix(min_val, max_val, t);
 ```
 
 
+¡Trato hecho\! Aquí tienes esa sección para tu "hoja maestra".
+
+Has descrito el proceso perfectamente: es un **proceso de dos pasos** para mover un valor de un rango (p.ej., `[-1, 1]`) a otro (p.ej., `[0.004, 0.996]`). La forma más limpia de hacerlo en GLSL es usar el rango universal `[0, 1]` como paso intermedio.
+
+-----
+
+### 4.3-Mapeo de Rango (Re-mapping)
+
+  * **Qué es:** Es la técnica para convertir un valor de un rango de entrada (p.ej., la posición de un vértice en `[-1, 1]`) a un nuevo rango de salida (p.ej., una coordenada de textura en `[0.004, 0.996]`).
+
+#### Paso 1: Mapeo matemático a `[0, 1]` (Estandarización)
+
+Primero, coge tu valor de entrada y conviértelo al rango estándar `[0, 1]`. La fórmula general es:
+`t = (valor - min_antiguo) / (rango_antiguo)`
+
+**En código (Caso común: de `[-1, 1]` a `[0, 1]`):**
+
+```glsl
+// --- Step 1: Map input range [-1, 1] to [0, 1] ---
+
+// The input value (e.g., from vertex.xy)
+// float value = vertex.x; // Range [-1.0, 1.0]
+
+// EXPLICACIÓN:
+// t = (valor - min_antiguo) / (rango_antiguo)
+// t = (valor - (-1.0)) / 2.0
+// t = (valor + 1.0) / 2.0 
+// t = valor/2.0 + 0.5
+
+// (value * 0.5) -> maps to [-0.5, 0.5]
+// ( ... ) + 0.5 -> maps to [ 0.0, 1.0]
+float t = (value * 0.5) + 0.5;
+
+// 't' is now our normalized value between 0.0 and 1.0
+```
+
+#### Paso 2: Interpolar de `[0, 1]` al Rango Final
+
+Ahora, usa la función `mix()` para tomar tu valor `t` (que está en `[0, 1]`) e interpolarlo linealmente a tu nuevo rango `[NUEVO_MIN, NUEVO_MAX]`.
+
+**En código (Caso común: de `[0, 1]` a `[min, max]`):**
+
+```glsl
+// --- Step 2: Interpolate from [0, 1] to [new_min, new_max] ---
+
+// Our new target range
+float new_min = 0.004;
+float new_max = 0.996;
+
+// 't' is the value from Step 1
+// mix() maps 0.0 -> new_min and 1.0 -> new_max
+float result = mix(new_min, new_max, t);
+
+// 'result' is now in the final range [0.004, 0.996]
+```
+
+-----
+
+### Ejemplo Completo (como en "geometry-image")
+
+Así es como se ven los dos pasos juntos para un `vec2`:
+
+```glsl
+// --- Full Range Remap Example ---
+// Input 'vertex.xy' is in [-1, 1]
+// Output 'genTexCoord' must be in [0.004, 0.996]
+
+// Step 1: Map [-1, 1] -> [0, 1]
+vec2 t = (vertex.xy * 0.5) + 0.5;
+
+// Step 2: Map [0, 1] -> [0.004, 0.996]
+vec2 genTexCoord = mix(vec2(0.004), vec2(0.996), t);
+```
+
+-----
+
+### ⚠️ Caso Especial: Vectores Normales (N)
+
+¡Como bien has dicho, las Normales son diferentes\! El proceso sigue siendo **Interpolar y LUEGO Normalizar**.
+
+  * **Objetivo:** Convertir un color de textura (rango `[0, 1]`) en un vector de dirección (rango `[-1, 1]`) que tenga longitud 1.0.
+
+**Paso 1: Interpolar (Re-mapear el rango)**
+
+  * Convertimos el color de `[0, 1]` a un vector de dirección `[-1, 1]`.
+  * (Usamos `mix()` o la fórmula matemática `(valor * 2.0) - 1.0`).
+
+**Paso 2: Normalizar (Fijar la longitud)**
+
+  * El vector resultante ahora apunta en la dirección correcta, pero su longitud *no* es 1.0.
+  * Usamos `normalize()` para "inflarlo" o "encogerlo" a una longitud exacta de 1.0, para que los cálculos de luz (`dot(N,L)`) funcionen.
+
+**En código:**
+
+```glsl
+// --- Special Case: Normals from Texture ---
+
+// 1. Read the color from the normal map texture
+// 'N_from_texture' is in range [0, 1]
+vec3 N_from_texture = texture(normalMap, vtexCoord).rgb;
+
+// 2. Step 1: Interpolate (Remap range) [0, 1] -> [-1, 1]
+vec3 N_remapped = mix(vec3(-1.0), vec3(1.0), N_from_texture);
+
+// 3. Step 2: Normalize (Fix length to 1.0)
+vec3 N_final = normalize(N_remapped);
+
+// NOW 'N_final' is ready to be used for lighting
+```
+
 
 ----
 ----
+
 
 # 5-Funciones Genéricas (Hoja Maestra)
 

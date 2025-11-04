@@ -42,6 +42,35 @@ void main()
 }
 ```
 
+**NOTA** Si te pide modificar la Projection y la Normal Space, se tiene que calcular por si solo:
+
+```glsl
+#version 330 core
+
+// --- INPUTS (from your 3D model) ---
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+// --- OUTPUTS (to the Fragment Shader) ---
+out vec4 frontColor; // El color FINAL calculado por vértice
+out vec2 vtexCoord;  // La coordenada de textura
+
+// --- UNIFORMS (from the viewer) ---
+uniform mat4 modelViewProjectionMatrix;
+uniform mat3 normalMatrix;
+
+void main()
+{
+    //P_object = texture ...
+    //P_eye_4 = modelViewMatrix * vec4(P_object, 1.0);
+
+    // Calcula la posición final
+    gl_Position = projectionMatrix * P_eye_4;
+}
+```
+
 ### A-Fragment Shader
 
 ```glsl
@@ -393,12 +422,13 @@ uniform float time; // Necesario para la animación
 void main()
 {
     // Variables de deformación
-    float scale_factor = 0.0;
+    float interp_factor = 0.0; // El factor de mezcla 't'
     vec3 vertex_objectspace = vertex;
     vec3 normal_objectspace = normal;
+    vec3 origen = vec3(0.0, 0.0, 0.0);
 
     // ==============================================================
-    // == STEP 3 (VS) - LÓGICA DE ANIMACIÓN "Spring"
+    // == STEP 3 (VS) - LÓGICA DE ANIMACIÓN "Spring" con MIX
     // ==============================================================
     
     // 1. Encontrar el tiempo actual dentro del ciclo de 3.5s
@@ -408,31 +438,32 @@ void main()
     if (t_period < 0.5)
     {
         // FASE 1: EXPANSIÓN (0.0s a 0.5s)
-        
-        // 2a. Calcular 't' de interpolación (0.0 a 1.0)
-        // El enunciado pide (t/0.5)^3
+        // El enunciado pide (t/0.5)^2
         float t_exp = t_period / 0.5;
-        scale_factor = t_exp * t_exp * t_exp;
+        interp_factor = pow(t_exp, 2.0);
+        
+        // Aplicamos la lógica 'mix' (Origen -> Vértice)
+        vertex_objectspace = mix(origen, vertex, interp_factor);
     }
     else
     {
         // FASE 2: COMPRESIÓN (0.5s a 3.5s)
         
-        // 2b. Calcular 't' de interpolación (0.0 a 1.0)
-        // Mapeamos linealmente el rango [0.5, 3.5] al rango [0.0, 1.0]
+        // Mapeamos [0.5, 3.5] a [0.0, 1.0] (Lineal)
         float t_comp = (t_period - 0.5) / 3.0;
         
-        // Como estamos comprimiendo (original -> origen),
-        // el factor de escala va de 1.0 (al inicio) a 0.0 (al final).
-        scale_factor = 1.0 - t_comp;
+        // Aplicamos la lógica 'mix' (Vértice -> Origen)
+        // (Esto es lo mismo que 1.0 - t_comp)
+        vertex_objectspace = mix(vertex, origen, t_comp);
+        
+        // Guardamos el factor de escala para la normal
+        interp_factor = 1.0 - t_comp;
     }
 
-    // 3. Aplicar la deformación (escalado uniforme desde el origen)
-    vertex_objectspace = vertex * scale_factor;
-    
-    // 4. Deformar la normal (con la inversa del factor de escala)
+    // 3. Deformar la normal (¡LA PARTE QUE FALTABA!)
+    // (Igual que en 'Dalify', debemos deformar la normal)
     // Añadimos 0.0001 para evitar dividir por cero
-    normal_objectspace = normal / (scale_factor + 0.0001);
+    normal_objectspace = normal / (interp_factor + 0.0001);
 
     // ==============================================================
 
@@ -440,8 +471,6 @@ void main()
     vec3 N = normalize(normalMatrix * normal_objectspace);
 
     // Calcular el color:
-    // El enunciado pide "gris con componentes Z de la normal"
-    // Esto MODIFICA la línea de color por defecto de tu esqueleto.
     frontColor = vec4(N.z, N.z, N.z, 1.0);
 
     // Pasar la coordenada de textura
@@ -465,8 +494,6 @@ void main()
     fragColor = frontColor;
 }
 ```
-
----
 
 
 ---
