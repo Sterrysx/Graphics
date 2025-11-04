@@ -1,0 +1,1813 @@
+
+===========================
+RESUMEN DE FUNCIONES EN SHADERS (GLSL)
+===========================
+SIEMPRE NORMALIZA LA N
+------------------------------------
+VERTEX SHADER (VS)
+------------------------------------
+
+→ Se ejecuta una vez por vértice. 
+→ Su tarea principal es calcular gl_Position y pasar datos al Fragment Shader.
+
+FUNCIONES TÍPICAS:
+- gl_Position = ...;
+    Obligatorio. Posición final del vértice en clip space (vec4).
+
+- transformaciones: puedes aplicar matrices
+    gl_Position = projection * view * model * a_position;
+
+- v_texcoord = a_texcoord;
+    Pasar coordenadas de textura al FS (con "out" y "in").
+
+CODIGO:
+#version 330 core
+
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+out vec4 frontColor;
+out vec2 vtexCoord;
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat3 normalMatrix;
+
+void main()
+{
+    vec3 N = normalize(normalMatrix * normal);
+    frontColor = vec4(color,1.0) * N.z;
+    vtexCoord = texCoord;
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0);
+}
+
+
+------------------------------------
+FRAGMENT SHADER (FS)
+------------------------------------
+→ discard PARA DESCARTAR
+→ Se ejecuta una vez por fragmento (píxel).
+→ Calcula el color final del píxel.
+
+CODIGO:
+#version 330 core
+
+in vec4 frontColor;
+out vec4 fragColor;
+
+void main()
+{
+    fragColor = frontColor;
+}
+
+FUNCIONES TÍPICAS:
+- fragColor = vec4(r, g, b, a);
+    Color final del píxel.
+
+- texture(sampler2D, uv);
+    Accede al color de una textura con coordenadas UV, devuelve  R G B alpha.
+
+FUNCIONES DE COLOR Y TEXTO:
+- texture2D(sampler, uv): GLSL 1.20 (usado en legacy)
+- texture(sampler, uv): GLSL moderno (330+)
+
+------------------------------------
+TIPOS DE VARIABLES EN SHADERS
+------------------------------------
+
+- attribute (solo en VS): datos por vértice (posición, UV...).
+- uniform: constantes externas al shader (matrices, tiempo, mouse...).
+- varying (VS → FS): ahora se usa "out" (VS) y "in" (FS).
+
+------------------------------------
+COORDENADAS EN SHADERS
+------------------------------------
+
+→ Coordenadas en VS:
+- a_position ∈ model space
+- Se transforma a clip space: gl_Position
+
+→ Coordenadas en FS:
+- v_texcoord ∈ [0,1]: coordenadas UV
+- gl_FragCoord.xy: posición del píxel en pantalla
+
+------------------------------------
+TRANSFORMACIONES EN VS: SCALE, ROTATE, TRANSLATE
+------------------------------------
+
+ESCALADO:
+mat4 scale = mat4(
+    vec4(sx, 0.0, 0.0, 0.0),
+    vec4(0.0, sy, 0.0, 0.0),
+    vec4(0.0, 0.0, sz, 0.0),
+    vec4(0.0, 0.0, 0.0, 1.0)
+);
+
+ROTACIÓN ANTIHORARIO:
+Matriz de rotación en el eje X
+Gira alrededor del eje X (afecta Y y Z):
+
+mat4 rotX = mat4(
+    1.0,     0.0,      0.0,    0.0,
+    0.0,  cos(angulo),   sin(angulo),    0.0,
+    0.0, -sin(angulo),   cos(angulo),    0.0,
+    0.0,     0.0,      0.0,    1.0
+);
+
+Matriz de rotación en el eje Y
+Gira alrededor del eje Y (afecta X y Z):
+mat4 rotY = mat4(
+    cos(angulo),   0.0, -sin(angulo),   0.0,
+    0.0,      1.0,   0.0,     0.0,
+    sin(angulo),   0.0,  cos(angulo),   0.0,
+    0.0,      0.0,   0.0,     1.0
+);
+Gira alrededor del eje Z (afecta X y Y):
+mat4 rotZ = mat4(
+    cos(angulo),  sin(angulo),  0.0,  0.0,
+   -sin(angulo),  cos(angulo),  0.0,  0.0,
+    0.0,     0.0,     1.0,  0.0,
+    0.0,     0.0,     0.0,  1.0
+);
+
+ROTACION HORARIO: 
+¿Qué cambia?
+El único cambio es que el signo del sin(angulo) pasa a ser positivo donde antes era negativo, y negativo donde antes era positivo.
+
+Matriz de rotación horaria alrededor del eje X
+
+mat4 rotX = mat4(
+    1.0,     0.0,      0.0,    0.0,
+    0.0,  cos(angulo),  -sin(angulo),    0.0,
+    0.0,  sin(angulo),   cos(angulo),    0.0,
+    0.0,     0.0,      0.0,    1.0
+);
+Matriz de rotación horaria alrededor del eje Y
+mat4 rotY = mat4(
+    cos(angulo),   0.0,  sin(angulo),   0.0,
+    0.0,      1.0,   0.0,     0.0,
+   -sin(angulo),   0.0,  cos(angulo),   0.0,
+    0.0,      0.0,   0.0,     1.0
+);
+Matriz de rotación horaria alrededor del eje Z
+mat4 rotZ = mat4(
+    cos(angulo),  -sin(angulo),  0.0,  0.0,
+    sin(angulo),   cos(angulo),  0.0,  0.0,
+    0.0,      0.0,     1.0,  0.0,
+    0.0,      0.0,     0.0,  1.0
+);
+
+¿Cómo se usa en un shader GLSL?
+Primero convierte tu ángulo a radianes (si lo necesitas):
+float angle = radians(45.0); // 45 grados → radianes
+
+TRANSLACIÓN:
+mat4 translate = mat4(
+    vec4(1.0, 0.0, 0.0, 0.0),
+    vec4(0.0, 1.0, 0.0, 0.0),
+    vec4(0.0, 0.0, 1.0, 0.0),
+    vec4(tx,  ty,  tz,  1.0)
+);
+
+USO:
+vec4 transformed = translate * rotZ * scale * a_position;
+
+
+----------------------------------------------------
+TRANSFORMACIONES Y PASO A CLIP SPACE
+----------------------------------------------------
+
+Para transformar un vértice desde modelo 3D hasta la pantalla:
+
+1. MODEL → pasa de coordenadas del objeto a su posición en el mundo.
+   Matriz: modelMatrix
+
+2. VIEW → transforma del mundo a la cámara.
+   Matriz: viewMatrix
+
+3. PROJECTION → proyecta de la cámara a espacio de clip.
+   Matriz: projectionMatrix
+
+El orden final es:
+   MVP = projectionMatrix * viewMatrix * modelMatrix
+
+Y se usa en el vertex shader como:
+   gl_Position = MVP * a_position;
+
+Después de clip space, OpenGL divide por w (perspectiva) y pasa a:
+   → Normalized Device Coordinates (NDC): [-1, 1]
+   → Viewport (pixels de pantalla)
+
+------------------------------------
+AYUDAS POR EJERCICIO
+------------------------------------
+
+SPRING (expansió/compressió cíclica):
+- VS calcula interpolació cúbica (expansió) o lineal (compressió).
+- Fases separades per temps amb mod(time, 3.5)
+- FS: gris segons component Z de la normal.
+
+INVADERS:
+- FS pinta cada cel·la d’una textura segons posició.
+- v_uv.x i v_uv.y → files i columnes.
+- Multiplica per nombre de files/columnes i accedeix a part de la textura.
+
+BINOCLES:
+- gl_FragCoord.xy → posició en píxels.
+- Dos cercles centrats al mouse amb radi.
+- FS: mostra textura nítida amb zoom dins, blur fora, vorera negra.
+
+XRAYS:
+- funció mouse() → retorna posició en pantalla.
+- Si dist < R → interpolació entre foot0 i foot[layer]
+- Si dist >= R → mostra només la pell (foot0)
+
+------------------------------------
+CONSELL FINAL:
+→ Fes càlculs pesats al VS si pots.
+→ Al FS, minimitza condicions i accés a textures pesades.
+
+
+
+============================================
+RUTA COMPLETA DE UN VÉRTICE EN OPENGL (YXY)
+============================================
+
+1️ OBJECT SPACE (model space)
+--------------------------------------------
+Qué es: Coordenadas del objeto tal cual.
+Ej: Un cubo de -1 a 1 en cada eje.
+Matriz: modelMatrix
+Tarea: posicionar, rotar o escalar el objeto en el mundo.
+VS:
+    vec4 pos_world = modelMatrix * a_position;
+
+2️ WORLD SPACE
+--------------------------------------------
+Qué es: El objeto ya colocado en la escena.
+Matriz: viewMatrix
+Tarea: aplicar la vista de la cámara (moviendo el mundo).
+VS:
+    vec4 pos_camera = viewMatrix * pos_world;
+
+
+3️ CAMERA / EYE SPACE
+--------------------------------------------
+Qué es: El vértice visto desde la cámara.
+Matriz: projectionMatrix
+Tarea: aplicar perspectiva u ortográfica.
+VS:
+   vec4 clip_space = projectionMatrix * pos_camera;
+
+
+4️ CLIP SPACE
+-------------------------------------------- 
+Qué es: Coordenadas previas al corte de frustum.
+VS final:
+    gl_Position = projection * view * model * a_position;
+
+
+5️ NDC (Normalized Device Coordinates)
+-------------------------------------------- 
+Qué es: gl_Position dividido entre w.
+Resultado en rango [-1, 1] en cada eje.
+Interno de OpenGL (automático)
+
+6️ VIEWPORT / WINDOW SPACE
+--------------------------------------------
+Qué es: Coordenadas convertidas a píxeles en pantalla.
+Fórmula (internamente):
+    x = (ndc.x + 1) * 0.5 * viewport.x;
+    y = (ndc.y + 1) * 0.5 * viewport.y;
+
+
+// Calcular P en window space:
+vec4 projected vertice en clip space 
+vec3 ndc = projected.xyz / projected.w;
+vec2 P_window = (ndc.xy * 0.5 + 0.5) * viewport;
+
+
+FS:
+    gl_FragCoord.xy ← posición en píxeles
+
+-------------------------------------------------
+MATRICES COMPLETAS: MVP = P * V * M
+
+- modelMatrix → posiciona el objeto
+- viewMatrix → aplica el punto de vista
+- projectionMatrix → aplica la proyección
+
+VS final:
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * a_position;
+
+
+
+===========================================
+FUNCIONES GLSL ÚTILES — EXPLICADAS
+===========================================
+
+1. distance(p1, p2)
+-------------------------------------------
+Devuelve: float
+Qué hace: calcula la distancia euclidiana entre dos puntos/vectores.
+Fórmula: length(p2 - p1)
+Ejemplo:
+    float d = distance(vec2(0.0, 0.0), vec2(3.0, 4.0)); // d = 5.0
+
+
+2. step(edge, x)
+-------------------------------------------
+Devuelve: 0.0 si x < edge, 1.0 si x >= edge
+Qué hace: crea un salto brusco. Ideal para umbrales o máscaras.
+Ejemplo:
+    float mask = step(0.5, 0.6); // mask = 1.0
+
+
+3. smoothstep(edge0, edge1, x)
+-------------------------------------------
+Devuelve: float ∈ [0.0, 1.0]
+Qué hace: transición suave entre 0 y 1 entre los dos bordes.
+Interpolación cúbica entre edge0 y edge1.
+Ejemplo:
+    float t = smoothstep(0.0, 1.0, 0.5); // t = 0.5
+
+
+// Ejemplo
+    // Centro del círculo en coordenadas de textura (0.5, 0.5)
+    vec2 center = vec2(0.5, 0.5);
+    float radius = 0.2;
+
+    // Distancia del fragmento al centro
+    float d = distance(vtexCoord, center);
+
+    // Ancho del borde suavizado
+    float w = length(vec2(dFdx(d), dFdy(d)));
+
+    // Factor de mezcla suave con smoothstep
+    float t = smoothstep(radius - w, radius + w, d);
+
+    // Interpolación entre colores: dentro es RED, fuera es WHITE
+    fragColor = mix(RED, WHITE, t);
+
+
+4. fract(x)
+-------------------------------------------
+Devuelve: parte decimal de x
+Qué hace: elimina la parte entera.
+Ejemplo:
+    fract(2.75) → 0.75
+
+
+5. floor(x)
+-------------------------------------------
+Devuelve: parte entera inferior (redondea hacia abajo).
+Ejemplo:
+    floor(2.9) → 2.0
+
+
+6. ceil(x)
+-------------------------------------------
+Devuelve: parte entera superior (redondea hacia arriba).
+Ejemplo:
+    ceil(2.1) → 3.0
+
+
+7. clamp(x, minVal, maxVal)
+-------------------------------------------
+Devuelve: x si está entre min y max, si no, limita.
+Ejemplo:
+    clamp(5.0, 0.0, 3.0) → 3.0
+
+
+8. dot(a, b)
+-------------------------------------------
+Devuelve: float
+Qué hace: producto escalar entre dos vectores.
+Ejemplo:
+    dot(vec3(1,0,0), vec3(1,0,0)) → 1.0
+
+
+9. cross(a, b)
+-------------------------------------------
+Devuelve: vec3
+Qué hace: producto vectorial (solo para vec3).
+Ejemplo:
+    cross(vec3(1,0,0), vec3(0,1,0)) → vec3(0,0,1)
+
+
+10. normalize(v)
+-------------------------------------------
+Devuelve: vecN con longitud 1 (misma dirección).
+Ejemplo:
+    normalize(vec3(3,0,0)) → vec3(1,0,0)
+
+
+11. length(v)
+-------------------------------------------
+Devuelve: magnitud (longitud) del vector.
+Ejemplo:
+    length(vec2(3,4)) → 5.0
+
+
+12. mat4(...)
+-------------------------------------------
+Crea una matriz 4x4.
+Ejemplo:
+    mat4 m = mat4(1.0); // matriz identidad
+
+
+13. mix(a, b, t)
+-------------------------------------------
+Devuelve: interpolación lineal entre a y b según t ∈ [0,1]
+Ejemplo:
+    mix(vec3(0), vec3(1), 0.5) → vec3(0.5)
+
+
+14. sin(), cos(), tan(), pow(), sqrt()
+-------------------------------------------
+Funciones matemáticas estándar.
+Ejemplo:
+    sin(PI), pow(x, y), sqrt(x)
+
+
+15. inversesqrt(x)
+-------------------------------------------
+Devuelve: 1.0 / sqrt(x)
+Usado para optimizar cálculos (como normalize).
+
+
+16. mod(x, y)
+-------------------------------------------
+Devuelve: x % y (parte restante de la división).
+Ejemplo:
+    mod(5.5, 2.0) → 1.5
+
+
+17. abs(x)
+-------------------------------------------
+Valor absoluto.
+Ejemplo:
+    abs(-3.2) → 3.2
+
+
+18. min(x, y), max(x, y)
+-------------------------------------------
+Devuelve el menor o mayor valor entre x e y.
+
+
+19. sign(x)
+-------------------------------------------
+Devuelve: -1.0, 0.0 o 1.0 según el signo de x.
+
+
+20. vec4(vec3, float)
+-------------------------------------------
+Crea un vec4 añadiendo el cuarto componente.
+Ejemplo:
+    vec4(vec3(1,1,1), 1.0) → vec4(1,1,1,1)
+
+
+
+
+===========================================
+CÁLCULO DE ILUMINACIÓN EN SHADERS (PHONG)
+===========================================
+
+OBJETIVO:
+Calcular el color final de un fragmento con iluminación tipo Phong:
+- luz ambiente
+- luz difusa
+- luz especular
+
+-------------------------------------------
+PASO A PASO:
+
+1. Construir un punto sobre la esfera (desde UV):
+    vec3 P = vec3(vtexCoord.x, vtexCoord.y, sqrt(1 - vtexCoord.x^2 - vtexCoord.y^2));
+
+2. Calcular la normal del punto:
+    vec3 N = normalize(normalMatrix * P);
+
+3. Transformar el punto a espacio de cámara:
+    P = (modelViewMatrix * vec4(P, 1.0)).xyz;
+
+4. Calcular vector hacia la luz:
+    vec3 L = normalize(lightPosition.xyz - P);
+
+5. Calcular vector reflejado:
+    vec3 R = normalize(2.0 * dot(N, L) * N - L);
+
+6. Vector hacia la cámara:
+    vec3 V = normalize(-P);
+
+7. Corte para el componente especular:
+    float specular = dot(N, L) < 0 ? 0.0 : 1.0;
+
+-------------------------------------------
+COLOR FINAL:
+
+fragColor =
+    lightAmbient * matAmbient +
+    lightDiffuse * matDiffuse * max(0.0, dot(N, L)) +
+    lightSpecular * matSpecular * max(0.0, pow(dot(R, V), matShininess)) * specular;
+
+-------------------------------------------
+COMPONENTES:
+
+- lightAmbient, lightDiffuse, lightSpecular → propiedades de la luz
+- matAmbient, matDiffuse, matSpecular → propiedades del material
+- matShininess → controla el brillo del especular
+
+-------------------------------------------
+QUÉ APORTA CADA COMPONENTE:
+
+- Ambient → luz constante en todo el objeto
+- Diffuse → luz orientada, más fuerte si la normal apunta hacia la luz
+- Specular → brillo que aparece cuando la reflexión de la luz apunta hacia la cámara
+
+uniform vec3 boundingBoxMin; // cantonada mínima de la capsa englobant
+uniform vec3 boundingBoxMax; // cantonada màxima de la capsa englobant
+
+float punt(float x) {
+	return (boundingBoxMax.y - boundingBoxMin.y)*x + boundingBoxMin.y;
+}//pasa el punto de la caja en normal a el real (0.35 al que es vd)
+
+pi = acos(-1)
+
+
+//CALCULAR NORMAL EN FS
+VS:
+#version 330 core
+
+layout (location = 0) in vec3 vertex;
+layout (location = 2) in vec3 color;
+
+out vec3 eyeVertex;
+out vec3 vertexColor;
+
+uniform mat4 modelViewMatrix, modelViewProjectionMatrix;
+
+void main() {
+	eyeVertex = (modelViewMatrix * vec4(vertex, 1.0)).xyz;
+	vertexColor = color;
+	gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0);
+}
+
+FS:
+#version 330 core
+
+in vec3 eyeVertex;
+in vec3 vertexColor;
+
+out vec4 fragColor;
+
+vec3 normal(vec3 A) {
+	vec3 AB = dFdx(A);
+	vec3 AC = dFdy(A);
+	return normalize(cross(AB, AC));
+}
+
+void main() {
+	fragColor = vec4(vertexColor * normal(eyeVertex).z, 1.0);
+}
+
+8  LUCES:
+VS:
+#version 330 core
+
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+out vec2 vtexCoord;
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrixInverse;
+uniform mat3 normalMatrix;
+
+out vec3 vN;
+out vec3 vV;
+out vec3 vP;
+
+void main() {
+    vN = normal;
+    vP = vertex;
+    vV = (modelViewMatrixInverse * vec4(0, 0, 0, 1)).xyz - vertex;
+    vtexCoord = texCoord;
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0);
+}
+
+
+FS:
+#version 330 core
+
+out vec4 fragColor;
+
+uniform vec3 boundingBoxMin;
+uniform vec3 boundingBoxMax;
+
+uniform vec4 lightDiffuse;
+uniform vec4 lightSpecular;
+
+uniform vec4 matDiffuse;
+uniform vec4 matSpecular;
+uniform float matShininess;
+
+uniform mat4 projectionMatrixInverse;
+
+in vec3 vN;
+in vec3 vV;
+in vec3 vP;
+
+vec4 phong(vec3 llum, vec3 N, vec3 V) {
+	vec3 L = normalize(llum - vP);
+	vec3 R = normalize(2.0*dot(N,L)*N-L);
+        float specular = dot(N, L) < 0 ? 0.0f : 1.0f;
+	return lightDiffuse*matDiffuse*max(0.0f, dot(N, L))/2.0 + lightSpecular*matSpecular*max(0.0f, pow(dot(R, V), matShininess))*specular;
+}
+
+void main() {
+	vec3 N = normalize(vN);
+	vec3 V = normalize(vV);
+	vec3 l1 = vec3(boundingBoxMin); vec3 l8 = vec3(boundingBoxMax);
+	vec3 l2 = vec3(l1.x, l1.y, l8.z); vec3 l3 = vec3(l1.x, l8.y, l1.z);
+	vec3 l4 = vec3(l1.x, l8.y, l8.z); vec3 l5 = vec3(l8.x, l1.y, l1.z);
+	vec3 l6 = vec3(l8.x, l1.y, l8.z); vec3 l7 = vec3(l8.x, l8.y, l1.z);
+        fragColor = phong(l1, N, V) + phong(l2, N, V) + phong(l3, N, V) + phong(l4, N, V) + phong(l5, N, V) + phong(l6, N, V) + phong(l7, N, V) + phong(l8, N, V); 
+}
+A continuación tienes un **resumen amplio y detallado** de todo lo necesario para abordar los ejercicios de plugins con Geometry Shaders en la asignatura de Gráficos de la FIB. Me centro en las partes que más hemos visto (estructurar un plugin, usar GS y cómo se coordinan VS/GS/FS, manejo de cámara y viewport, buenas prácticas, errores comunes, etc.). Aunque ya dominas los VS y los FS, incluyo algunos apuntes generales para que tengas el contexto completo. El objetivo es que, leyendo esto, comprendas no solo **el cómo**, sino también **el porqué** de cada paso, y dispongas de consejos para depurar y ampliar tus propios shaders.
+
+---
+
+# 1. Estructura general de un plugin en GlarenaSL
+
+En GlarenaSL (el viewer de la FIB), un plugin es simplemente una clase que hereda de `Plugin` y, normalmente, también de `QObject`. Hay varios métodos “hook” que puedes sobreescribir para enganchar tu lógica en diferentes momentos:
+
+```cpp
+// MyPlugin.h
+#ifndef _MYPLUGIN_H
+#define _MYPLUGIN_H
+
+#include "plugin.h"
+#include <QOpenGLFunctions> // si vas a usar funciones OpenGL directamente
+
+class MyPlugin : public QObject,
+                 public Plugin,
+                 protected QOpenGLFunctions   // para usar glGenBuffers, glBindTexture, … de forma portable
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "Plugin")
+    Q_INTERFACES(Plugin)
+
+  public:
+    // Se llaman automáticamente en los momentos indicados:
+    void onPluginLoad();               // Una vez, al cargar el plugin
+    bool paintGL();                    // Cada frame, para dibujar
+    void preFrame();                   // Antes de dibujar cada frame
+    void postFrame();                  // Después de dibujar cada frame
+    void onObjectAdd();                // Cuando se añade un nuevo objeto a la escena
+    void keyPressEvent(QKeyEvent*);    // Si quieres reaccionar a teclas
+    void mouseMoveEvent(QMouseEvent*); // Si quieres reaccionar a movimiento de ratón
+
+    // También puedes sobreescribir:
+    // bool drawScene();
+    // bool drawObject(int); 
+    // para tomar control del dibujo de la escena o de un objeto, en lugar de paintGL().
+
+  private:
+    // Punteros a tus shaders / programas:
+    QOpenGLShader       *vs = nullptr, *fs = nullptr, *gs = nullptr;
+    QOpenGLShaderProgram *program = nullptr;
+    // Si necesitas un segundo programa (p. ej. depth vs normal):
+    QOpenGLShader       *vs2 = nullptr, *fs2 = nullptr;
+    QOpenGLShaderProgram *program2 = nullptr;
+
+    // IDs de VAOs/VBOs, texturas, etc.
+    GLuint VAO = 0, VBO = 0;
+    // ... otros miembros privados
+
+    // Métodos auxiliares privados
+    void compileAndLinkShaders();
+    void initGeometry();    // crea VAO/VBO si dibujas algo propio
+    void initTextures();    // carga texturas, si las necesitas
+};
+#endif
+```
+
+### 1.1 onPluginLoad()
+
+Se invoca **una sola vez** cuando el plugin se carga. Aquí es donde debes:
+
+1. **Obtener el contexto OpenGL**:
+
+   ```cpp
+   GLWidget &g = *glwidget();
+   g.makeCurrent();
+   ```
+
+2. **Inicializar funciones OpenGL** si heredas de `QOpenGLFunctions`:
+
+   ```cpp
+   initializeOpenGLFunctions();
+   ```
+
+   Con esto, ya puedes llamar a `glGenBuffers()`, `glBindVertexArray()`, etc., de forma portable en Windows, macOS y Linux.
+
+3. **Compilar y enlazar** tus shaders (VS, GS, FS), usando `QOpenGLShader` y `QOpenGLShaderProgram`. Por ejemplo:
+
+   ```cpp
+   vs = new QOpenGLShader(QOpenGLShader::Vertex, this);
+   vs->compileSourceFile(g.getPluginPath() + "/../MyPlugin/my.vert");
+   gs = new QOpenGLShader(QOpenGLShader::Geometry, this);
+   gs->compileSourceFile(g.getPluginPath() + "/../MyPlugin/my.geom");
+   fs = new QOpenGLShader(QOpenGLShader::Fragment, this);
+   fs->compileSourceFile(g.getPluginPath() + "/../MyPlugin/my.frag");
+
+   program = new QOpenGLShaderProgram(this);
+   program->addShader(vs);
+   program->addShader(gs);
+   program->addShader(fs);
+   program->link();
+   ```
+
+   * **`g.getPluginPath()`** devuelve la carpeta donde está instalado el plugin, útil para rutas relativas.
+   * Tras compilar cada shader, comprueba `vs->log()` o `program->log()` para ver errores o advertencias.
+
+4. **Crear buffers y objetos** si tu plugin necesita VAO/VBO propios (por ejemplo, para dibujar un quad a pantalla completa, un cubo, etc.).
+
+   ```cpp
+   glGenVertexArrays(1, &VAO);
+   glBindVertexArray(VAO);
+
+   glGenBuffers(1, &VBO);
+   glBindBuffer(GL_ARRAY_BUFFER, VBO);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offset);
+   glEnableVertexAttribArray(0);
+   glBindVertexArray(0);
+   ```
+
+5. **Cargar texturas**, si tu GS o FS las necesita (por ejemplo, positionMap, normalMap, etc.).
+
+   ```cpp
+   GLuint texId;
+   glGenTextures(1, &texId);
+   glBindTexture(GL_TEXTURE_2D, texId);
+   // Configurar filtros y wrap:
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+   // Cargar datos (por ejemplo, con QImage):
+   QImage img(":/textures/myTex.png");
+   img = img.convertToFormat(QImage::Format_RGBA8888);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(),
+                0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
+   glBindTexture(GL_TEXTURE_2D, 0);
+   ```
+
+---
+
+### 1.2 onObjectAdd()
+
+Se llama **cada vez** que el viewer añade un objeto nuevo a la escena (por ejemplo, el usuario añade un modelo nuevo). Úsalo si necesitas:
+
+* Inicializar datos específicos de ese objeto (por ejemplo, leer sus vértices y construir un BVH, o generar instancias).
+* Recalcular bounding boxes, si tu plugin depende de ellas.
+
+En muchos ejercicios no es necesario tocarlo, pero se incluye por si el usuario añade múltiples modelos y quieres reaccionar.
+
+---
+
+### 1.3 drawScene() / drawObject(int)
+
+Existen dos mecanismos para “interceptar” el dibujo de la escena:
+
+* **`drawScene()`**: se llama una sola vez, antes de que el viewer dibuje todos los objetos. Si tu plugin devuelve `true`, detiene el dibujo por defecto y tú tienes que llamar a `drawPlugin()->drawScene()` para que el viewer dibuje los objetos. Sirve para aplicar un tratamiento global (por ejemplo, un post‐proceso, o forzar un shader a toda la escena).
+
+  ```cpp
+  bool MyPlugin::drawScene()
+  {
+      program->bind();
+      program->setUniformValue("modelViewProjectionMatrix", MVP);
+      drawPlugin()->drawScene(); // deja que el viewer dibuje todos los objetos
+      program->release();
+      return true; // no dejar que el viewer pinte la escena con su shader por defecto
+  }
+  ```
+
+* **`drawObject(int id)`**: se llama por cada objeto `id`. Devuelve `true` si ya dibujaste tú ese objeto y no quieres que el viewer lo dibuje con su shader por defecto. Útil si solo quieres procesar un objeto concreto.
+
+En la mayoría de los ejercicios con GS basta con usar `paintGL()` en lugar de `drawScene()`, a no ser que quieras interceptar todo el renderizado.
+
+---
+
+### 1.4 paintGL()
+
+Es el método fundamental que se invoca **cada frame** para que el plugin dibuje. Ejemplo “pseudocódigo” típico:
+
+```cpp
+bool MyPlugin::paintGL()
+{
+    GLWidget &g = *glwidget();
+    g.makeCurrent();
+
+    int w = g.width();
+    int h = g.height();
+
+    // 1. Ajustar aspect ratio
+    camera()->setAspectRatio(float(w) / float(h));
+
+    // 2. Definir viewport: toda la pantalla
+    glViewport(0, 0, w, h);
+
+    // 3. Calcular matrices
+    QMatrix4x4 MVP = camera()->projectionMatrix() * camera()->viewMatrix();
+    QMatrix3x3 NM  = camera()->viewMatrix().normalMatrix();
+
+    // 4. Bindear el shader (puede ser VS+GS+FS)
+    program->bind();
+    program->setUniformValue("modelViewProjectionMatrix", MVP);
+    program->setUniformValue("normalMatrix", NM);
+    // P.ej. si usas textures:
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, positionMapId);
+    program->setUniformValue("positionMap", 0);
+
+    // 5. Dibujar la escena
+    drawPlugin()->drawScene();
+
+    // 6. Release
+    program->release();
+
+    return true; // ya hemos pintado la escena
+}
+```
+
+#### 1.4.1 Dividir pantalla en dos mitades (depth vs normal)
+
+Si tu ejercicio pide “dos pasos” con diferentes shaders y diferentes viewports, sería así:
+
+```cpp
+bool DepthNormal::paintGL()
+{
+    GLWidget &g = *glwidget();
+    g.makeCurrent();
+
+    int w = g.width();
+    int h = g.height();
+
+    // Matrices globales
+    QMatrix4x4 MVP = camera()->projectionMatrix() * camera()->viewMatrix();
+    QMatrix3x3 NM  = camera()->viewMatrix().normalMatrix();
+
+    // ---------------------------------------
+    // Paso 1: mitat esquerra amb depth shaders
+    // ---------------------------------------
+    camera()->setAspectRatio(float(w / 2) / float(h));
+    glViewport(0, 0, w/2, h);
+
+    programDepth->bind();
+    programDepth->setUniformValue("modelViewProjectionMatrix", MVP);
+    // (si depth.vert/depth.frag requieren altres uniforms, aquí los pones)
+    drawPlugin()->drawScene();
+    programDepth->release();
+
+    // ----------------------------------------
+    // Paso 2: mitat dreta amb normal shaders
+    // ----------------------------------------
+    camera()->setAspectRatio(float(w / 2) / float(h));
+    glViewport(w/2, 0, w/2, h);
+
+    programNormal->bind();
+    programNormal->setUniformValue("modelViewProjectionMatrix", MVP);
+    programNormal->setUniformValue("normalMatrix", NM);
+    drawPlugin()->drawScene();
+    programNormal->release();
+
+    // (opcional) Restaurar aspect ratio global
+    camera()->setAspectRatio(float(w) / float(h));
+
+    return true;
+}
+```
+
+**¡Atención!**
+
+* `camera()->setAspectRatio()` debe llamarse **antes** de calcular las matrices de proyección (o inmediatamente después de haberlas calculado, porque cambian si cambias aspect ratio).
+* `glViewport` define **la región de la ventana** en la que se dibujará. El sistema de coordenadas Normalized Device Coordinates (NDC) siempre va de `[-1,1]` en X y Y, pero el viewport escala de NDC a píxeles.
+* En el primer paso, el viewport es `(x=0, y=0, width=w/2, height=h)` y en el segundo `(x=w/2, y=0, width=w/2, height=h)`. Así divides verticalmente la ventana.
+
+---
+
+# 2. Vertex Shader (VS): tareas imprescindibles
+
+Aunque ya dominas el VS, recordaré rápidamente qué debe contener cuando trabajas con GS:
+
+1. **Calcular gl\_Position en *object space*** si tu GS asume eso.
+
+   ```glsl
+   // vs.geom-image.vert
+   #version 330 core
+   layout(location = 0) in vec3 vertex;
+   layout(location = 1) in vec3 normal;
+   layout(location = 2) in vec2 texCoord; // si usas texturas
+
+   uniform mat4 modelViewMatrix;
+   uniform mat4 modelViewProjectionMatrix;
+   uniform mat3 normalMatrix;
+
+   out vec3 vPos;        // posición en object space
+   out vec3 vNormalEye;  // normal en eye space
+   out vec2 vTexCoord;   // coords de textura si se usan
+
+   void main() {
+       vPos = vertex;                                        // object space
+       vNormalEye = normalize(normalMatrix * normal);        // eye space
+       vTexCoord = texCoord;                                 // para ejemplos de textures
+       gl_Position = vec4(vertex, 1.0); // SOLO en object space, el GS se encarga de MVP
+   }
+   ```
+2. El VS *no* llama a `EmitVertex()`: eso lo hace el GS.
+3. Si tu ejercicio no tiene GS, el VS sí debe escribir `gl_Position = MVP * vec4(vertex,1.0)` para enviar a clip space a la etapa siguiente.
+
+---
+
+# 3. Geometry Shader (GS): patrones y ejemplos
+
+El **Geometry Shader** se intercala **entre VS y FS**. Recibe primitivas completas (triángulos, líneas, puntos) y puede:
+
+* **Descartar** la primitiva entera (no emitir nada, por culling o condiciones).
+* **Emitir la primitiva original** (para overlay o efectos).
+* **Emitir nueva geometría**: más triángulos, quads, líneas, puntos, etc.
+* **Enviar datos ad hoc a FS**: color, coordenadas de textura, posición origen, centro de triángulo, etc.
+
+### 3.1 Sintaxis básica
+
+```glsl
+#version 330 core
+
+layout(triangles) in;                      // Entrada: triángulos de 3 vértices
+layout(triangle_strip, max_vertices = N) out;  // Salida: strip de triángulos, máximo N vértices
+
+// If you need to preserve “flat” interpolation of some variables:
+// layout(triangles) in;
+// layout(triangle_strip, max_vertices = N) out;
+
+// Variables “in” desde VS (arreglo de 3 elementos por triángulo):
+in vec3 vPos[];            // por ejemplo, posición en object space
+in vec3 vNormalEye[];      // normal en eye space
+in vec2 vTexCoord[];       // coordenadas de textura
+in vec4 vColor[];          // color desde VS si lo generas en VS
+
+// Variables “out” hacia FS:
+out vec4 gfrontColor;      // color a pasar a FS
+out vec3 P;                // posición en object space (para círculos)
+out vec3 C;                // centro de triángulo (para círculos)
+out vec2 gTexCoord;        // text coords (para marginados en caras)
+
+// Uniforms que necesites:
+uniform bool culling;      // activar/desactivar backface culling
+uniform mat4 modelViewProjectionMatrix; // para pasar a clip space
+
+void main() {
+    // 1. (Opcional) Backface culling:
+    if (culling) {
+        if (vNormalEye[0].z < 0 && vNormalEye[1].z < 0 && vNormalEye[2].z < 0) {
+            return; // no emitimos nada
+        }
+    }
+
+    // 2. Calcular centro del triángulo en object space:
+    vec3 center = (vPos[0] + vPos[1] + vPos[2]) / 3.0;
+
+    // 3. Emitir la geometría deseada. Ejemplo: crear un cubo de lado 0.16 centrado en “center”:
+    float halfSize = 0.08;
+    for (int i = 0; i < 36; ++i) {
+        // “cubeVerts” y “cubeFaces” están definidos globalmente
+        vec3 local = cubeVerts[cubeFaces[i]] * halfSize;
+        vec3 worldPos = center + local;
+
+        // 4. gl_Position = MVP * vec4(worldPos,1):
+        gl_Position = modelViewProjectionMatrix * vec4(worldPos, 1.0);
+
+        // 5. Enviar color calculado según “mode”:
+        //    Por ejemplo, si quieres color basado en “center” (modo 1):
+        vec3 rgb = (center + vec3(1.0)) * 0.5; // de [-1,1] a [0,1]
+        gfrontColor = vec4(rgb, 1.0);
+
+        // 6. Enviar coordenadas de textura “(s,t)” para márgenes:
+        int faceId = i / 6; // cada 6 vértices = cara
+        if (faceId == 0 || faceId == 1)          // cara orientada en Z (XY)
+            gTexCoord = (local.xy + vec2(1.0)) * 0.5;
+        else if (faceId == 2 || faceId == 3)     // cara orientada en X (YZ)
+            gTexCoord = (local.zy + vec2(1.0)) * 0.5;
+        else if (faceId == 4 || faceId == 5)     // cara orientada en Y (XZ)
+            gTexCoord = (local.xz + vec2(1.0)) * 0.5;
+
+        EmitVertex();
+        if (i % 3 == 2)
+            EndPrimitive();
+    }
+}
+```
+
+#### 3.1.1 Explicación de los “layout”
+
+* `layout(triangles) in;` → el GS recibe grupos de 3 vértices, es decir, un triángulo completo que salió del VS.
+* `layout(triangle_strip, max_vertices = 36) out;` → el GS generará listados de triángulos en “triangle strip”, y no emitirá más de 36 vértices por cada triángulo de entrada. En nuestro ejemplo de cubo, cada cubo tiene 12 triángulos (2 triángulos × 6 caras) = 36 vértices.
+
+#### 3.1.2 Uso de `gl_in[]` vs tus propias variables
+
+* `gl_in[i].gl_Position` es la posición que puso el VS en `gl_Position`. Si el VS hizo `gl_Position = vec4(vertex,1)`, entonces estás recibiendo la **posición en object space** (clip = object).
+* Si el VS hizo `gl_Position = MVP * vec4(vertex,1)`, entonces `gl_in[i].gl_Position` ya está en clip space.
+* **El GS puede usar `gl_in[i].gl_Position` directamente**, pero con cuidado de qué espacio es (object vs clip). Normalmente, cuando vas a generar nueva geometría, trabajas en **object space** y solo conviertes a clip space al final con `MVP`.
+
+#### 3.1.3 Emitir la primitiva original
+
+A veces quieres dibujar primero el triángulo original y luego «añadir» algo encima (por ejemplo, un quad con la F, un cubo, etc.). Para ello, puedes hacer:
+
+```glsl
+// Emitir triángulo original
+for (int i = 0; i < 3; ++i) {
+    gl_Position = gl_in[i].gl_Position; // si VS ya lo puso en clip space
+    gfrontColor = vfrontColor[i];
+    gTexCoord = vec2(-1.0); // indicador de “sin textura”
+    EmitVertex();
+}
+EndPrimitive();
+```
+
+Y luego emitís la geometría extra (cubo, quad, etc.).
+
+---
+
+### 3.2 Casos típicos de GS en los ejercicios vistos
+
+1. **Espejo (Mirror)**
+
+   * VS: coloca `gl_Position` con `MVP*vertex` y pasa normales, color, etc.
+   * GS:
+
+     * **Culling:** descartar triángulos backface respecto al plano de espejo.
+     * **Emitir triángulo original** (si quieres overlay).
+     * **Calcular triángulo reflejado** en el plano espejo → `P_reflejada = reflect(P, plano)` → `gl_Position = MVP * vec4(P_reflejada,1)` → `EmitVertex()`.
+   * FS: pinta con textura reflejada, etc.
+
+2. **Círculos en el centro de cada triángulo**
+
+   * VS: `gl_Position` en clip space y pasa `vPos` (posición en object space) y `vNormalEye`.
+   * GS:
+
+     * **Culling backface** opcional.
+     * **Emitir triángulo original**
+     * **Calcular centro C**, luego **emitir quad** de 4 vértices con `gl_Position = vec4(C.xy + offsetXY, C.z + depth, 1)` → generas un quad en NDC centrado en `C`.
+     * Pasar `gTexCoord` = `(offset.xy + size)/ ...` para que el FS sepa si pertenece al círculo.
+   * FS: “si dist(P,C) > size → blanco o discard; else → color”.
+
+3. **Cubos centrados en cada triángulo**
+
+   * VS: `gl_Position` en object space, pasa `vPos` y `vNormalEye`, etc.
+   * GS:
+
+     * **Culling backface** opcional.
+     * **Calcular C**
+     * Por cada cara del cubo, `P = C + cubeVerts[i]*0.08`, luego `gl_Position = MVP*vec4(P,1)`, `EmitVertex()`, y cada 3, `EndPrimitive()`.
+     * Pasar `gTexCoord` según orientación de cara, para FS pueda hacer márgenes.
+   * FS: “si (s,t) fuera → negro, else → color”.
+
+4. **ManyLights (rejilla de luces)**
+
+   * En este ejercicio no hay GS, solo VS+FS. Pero se ilustra cómo pasar arrays de luces a FS, hacer 3 bucles anidados, etc.
+
+5. **Geometry Image (bunny-geo + bunny-norm)**
+
+   * VS: a partir de un plano subdividido con coordenadas `(x,y) ∈ [-1,1]`, calcula `st = (vertex.xy * 0.496 + 0.5)`, luego lee `P = texture(positionMap, st).rgb` y `N_obj = texture(normalMap1, st).rgb*2 - 1`, y finalmente hace `gl_Position = MVP*vec4(P,1)`.
+   * FS: pinta según `mode` (color=P, color=P\*N.z, Phong con P, Phong con P como matDiffuse).
+   * No hay GS, pero el VS actúa como “mini‐GS” porque deforma cada vértice según la textura.
+
+---
+
+## 4. Fragment Shader (FS): patrones comunes
+
+Aunque ya los conoces, aquí tienes un **esquema mental** para los FS que coordinan con un GS:
+
+```glsl
+#version 330 core
+
+in vec4  gfrontColor; // color recibido del GS
+in vec3  P;           // posición en object space (solo si el GS lo envía)
+in vec3  C;           // centro del triángulo (si el GS lo envía)
+in vec2  gTexCoord;   // coordenadas de textura [0,1] para márgenes (si el GS lo envía)
+
+out vec4 fragColor;
+
+uniform int mode;
+uniform float size;   // para círculos
+uniform bool opaque;  // para decidir blanco vs discard
+
+vec4 phong(vec3 L, vec3 N, vec3 V, vec3 diffColor, vec4 matSpecular, float shininess, vec4 lightAmbient, vec4 lightDiffuse, vec4 lightSpecular) {
+    vec4 ambient = matAmbient * lightAmbient;
+    float NL = max(dot(N, L), 0.0);
+    vec4 diffuse = (NL > 0.0) ? (vec4(diffColor,1.0) * lightDiffuse * NL) : vec4(0.0);
+    vec4 specular = vec4(0.0);
+    if (NL > 0.0) {
+        vec3 R = reflect(-L, N);
+        float RV = max(dot(R,V), 0.0);
+        specular = matSpecular * lightSpecular * pow(RV, shininess);
+    }
+    return ambient + diffuse + specular;
+}
+
+void main()
+{
+    // 1) Modo círculo:
+    if (mode == 2 || mode == 3) {
+        float d = distance(P, C);
+        if (d > size) {
+            if (opaque) fragColor = vec4(1.0); else discard;
+            return;
+        }
+    }
+
+    // 2) Modo margen negro (cubos):
+    if (mode >= 2) {
+        if (gTexCoord.x < 0.05 || gTexCoord.x > 0.95 ||
+            gTexCoord.y < 0.05 || gTexCoord.y > 0.95) {
+            fragColor = vec4(0.0);
+            return;
+        }
+    }
+
+    // 3) Modo Phong (ManyLights o Geometry Image):
+    if (mode == 3 /* por ejemplo*/) {
+        vec3 L = normalize(lightPos - Peye);
+        vec3 N = normalize(Neye);
+        vec3 V = normalize(eyePos - Peye);
+        fragColor = phong(L, N, V, diffColor, matSpecular, shininess,
+                          lightAmbient, lightDiffuse, lightSpecular);
+        return;
+    }
+
+    // 4) Modo “passthrough” (simplemente color):
+    fragColor = gfrontColor;
+}
+```
+
+---
+
+## 5. Buenas prácticas y consejos de depuración
+
+1. **Siempre comprueba los logs de compilación y enlace** de tus shaders:
+
+   ```cpp
+   vs->compileSourceCode(vs_src);
+   std::cout << "VS log: " << vs->log().toStdString() << std::endl;
+   fs->compileSourceCode(fs_src);
+   std::cout << "FS log: " << fs->log().toStdString() << std::endl;
+   program->addShader(vs);
+   program->addShader(fs);
+   program->link();
+   std::cout << "Link log: " << program->log().toStdString() << std::endl;
+   ```
+
+   * Si algo sale mal, no vas a ver nada. Asegúrate de que **cada cadena de shader incluya `\n`** y que no falten `;` al final de cada línea.
+
+2. **Usa colores “debug”** en el GS o FS para ver valores intermedios:
+
+   * Por ejemplo, en el FS:
+
+     ```glsl
+     fragColor = vec4(gTexCoord, 0.0, 1.0); // ver si gTexCoord varía de 0 a 1
+     ```
+   * O:
+
+     ```glsl
+     fragColor = vec4(center.x * 0.5 + 0.5, 0, 0, 1); // rojo intenso si center.x=1, etc.
+     ```
+
+3. **Deshabilita el backface culling de OpenGL** si estás debuggeando GS, para asegurarte de que ves todas las caras:
+
+   ```cpp
+   glDisable(GL_CULL_FACE);
+   ```
+
+   Luego, cuando confirmes que todo va bien, vuelve a activar:
+
+   ```cpp
+   glEnable(GL_CULL_FACE);
+   glCullFace(GL_BACK);
+   ```
+
+4. **Activa el depth test** si tu GS genera varias caras (p. ej. cubos superpuestos):
+
+   ```cpp
+   glEnable(GL_DEPTH_TEST);
+   glDepthFunc(GL_LESS);
+   ```
+
+5. **Al dividir pantalla, recuerda restaurar el `aspectRatio` y el `viewport`** al estado original si otros plugins o la UI dependen de él. El `camera()->setAspectRatio(...)` debe corresponder con la fracción del viewport que vayas a dibujar.
+
+6. **Si usas texturas (positionMap, normalMap, etc.)**, asegúrate de:
+
+   * Llamar a `glActiveTexture(GL_TEXTUREi); glBindTexture(GL_TEXTURE_2D, texId); program->setUniformValue("texSampler", i);` antes de dibujar.
+   * Que el VS/GS/FS usen el mismo **`sampler2D`** y que el número de textura coincida con el uniform (p.ej. si usas `texture(positionMap, st)`, asigna `program->setUniformValue("positionMap", 0);` tras `glActiveTexture(GL_TEXTURE0)`).
+
+7. **Documenta cada paso** de tu GS:
+
+   ```glsl
+   // Paso 1: backface culling
+   // Paso 2: calcular centro C
+   // Paso 3: emitir triángulo original
+   // Paso 4: emitir geometría extra (cubo / círculo)
+   // Paso 5: cálculos de color y coords de textura
+   ```
+
+8. **Controla el máximo de vértices** que emites en el GS (`max_vertices`). Si te pasas, el shader no compila. Calcula bien:
+
+   * Si generas un solo quad (4 vértices), pon `max_vertices = 4`.
+   * Si generas un cubo de 12 triángulos = 36 vértices, pon `max_vertices = 36`.
+
+9. **Revisa la correspondencia VS → GS → FS**:
+
+   * Si el VS emite `out vec3 vPos;`, el GS debe declarar `in vec3 vPos[];`.
+   * Si el GS emite `out vec3 P;`, el FS debe declarar `in vec3 P;`.
+   * **Los nombres y tipos deben coincidir** y la cantidad (un arreglo de longitud 3 en GS vs un solo vector en FS) debe cuadrar.
+
+10. **Si usas múltiples shaders en un solo plugin**, mantén nombres claros:
+
+    ```cpp
+    QOpenGLShader       *depth_vs, *depth_fs, *normal_vs, *normal_fs;
+    QOpenGLShaderProgram *programDepth, *programNormal;
+    ```
+
+---
+
+## 6. Ejemplos de ejercicios y qué mirar en cada uno
+
+### 6.1 Mirror + Textura reflectante
+
+* **VS**: normal, gl\_Position = MVP\*vertex
+* **GS (opcional si añades geometría)**: calcular reflejo, emitir triángulo reflejado
+* **FS**: si fragmento dentro del plano espejo → sample de textura reflectante (usando coords de reflexión), else → color normal.
+
+### 6.2 Deferred Shading (G‐Buffer)
+
+* **VS**: normal, gl\_Position = MVP\*vertex
+* **FS (paso 1)**: varias versiones de `gbuffer_*.frag` para pintar posición, normal y color+specular a 3 texturas
+* **VS + FS (paso 4)**: un solo FS `deferredshading.frag` que samplea las 3 texturas y aplica Phong.
+* **Aquí no hay GS**, pero sí multiple pases y uso intensivo de FBOs, texturas intermedias, glCopyTexImage2D, etc.
+
+### 6.3 Círculos en cada triángulo
+
+* **VS**: transmite `vPos` y `vNormalEye`, `gl_Position=MVP*vertex`
+* **GS**:
+
+  1. Culling opcional
+  2. Emitir triángulo original
+  3. Calcular centro C en NDC
+  4. Emitir quad de 4 vértices en NDC con offsets ±size alrededor de C, asignar `gTexCoord` entre `[0,1]`
+* **FS**:
+
+  1. `dist = length(P−C)` (con P y C en object o en NDC, según enviaste)
+  2. Si `dist > size` → blanco o `discard`
+  3. Else → `fragColor = gfrontColor`
+
+### 6.4 Cubos en cada triángulo
+
+* **VS**: transmite `vPos` y `vNormalEye`, `gl_Position=MVP*vertex`
+* **GS**:
+
+  1. Culling opcional
+  2. Calcular centro C
+  3. Para cada una de las 36 caras (i∈\[0,35]):
+
+     * `local = cubeVerts[cubeFaces[i]] * halfSize`
+     * `P = C + local`
+     * `gl_Position = MVP*vec4(P,1)`
+     * `faceId = i/6`
+
+       * Si `(faceId==0||faceId==1)` → `gTexCoord=(local.xy+1)/2`
+       * else if `(faceId==2||faceId==3)` → `gTexCoord=(local.zy+1)/2`
+       * else `(faceId==4||faceId==5)` → `gTexCoord=(local.xz+1)/2`
+     * `gfrontColor = vec4((C+1)*0.5,1)`
+     * `EmitVertex()`, `EndPrimitive()` cada 3 vértices.
+* **FS**:
+
+  1. Si `mode>=2` y `(gTexCoord.x<0.05||gTexCoord.x>0.95||gTexCoord.y<0.05||gTexCoord.y>0.95)` → `fragColor=vec4(0)`
+  2. Else → `fragColor=gfrontColor`
+
+### 6.5 Geometry Image (bunny-geo + bunny-norm)
+
+* **VS**:
+
+  1. `st = vertex.xy*0.496 + vec2(0.5) //→ [0.004,0.996]`
+  2. `P = texture(positionMap, st).rgb`
+  3. `N_obj = texture(normalMap1, st).rgb*2 - 1 // normal en object space`
+  4. `N = normalize(normalMatrix * N_obj) // en eye space`
+  5. Aplica `mode`:
+
+     * 0 → `frontColor=vec4(P,1)`
+     * 1 → `frontColor=vec4(P*N.z,1)`
+     * 2 → `frontColor=phong(L,N,V)` (usar P para OBS, etc.)
+     * 3 → `frontColor=phong(L,N,V)` con `diffuse = vec4(P,1)`
+  6. `gl_Position = MVP * vec4(P,1)`
+* **FS**:
+
+  ```glsl
+  #version 330 core
+  in vec4 frontColor;
+  out vec4 fragColor;
+  void main(){
+      fragColor = frontColor;
+  }
+  ```
+* **Sin GS**.
+
+---
+
+## 7. Buenas prácticas y trucos avanzados
+
+1. **Organiza tu código GLSL en archivos separados** (`.vert`, `.geom`, `.frag`) y cárgalos con rutas relativas usando `g.getPluginPath()`.
+
+2. **Usa `layout(location = X)`** en VS para evitar confusiones de “location” de atributos (p.ej., `layout(location = 0) in vec3 vertex; layout(location = 1) in vec3 normal;`).
+
+3. **Controla versiones GLSL**: con `#version 330 core` garantizas que tienes Geometry Shaders disponibles (GL ≥ 3.2).
+
+4. **Comprueba siempre los logs** (`vs->log()`, `program->log()`) tras compilar y enlazar.
+
+5. **Debugging incremental**:
+
+   * Primero haz que tu GS emita solo el triángulo original y pinta todo de rojo para verificar que el paso VS→GS→FS funciona.
+   * Luego haz que emita un solo quad simple (sin offset) para ver si aparece.
+   * Añade offsets y lógica de color poco a poco.
+
+6. **Gestiona el depth test correctamente**:
+
+   * Para ver la geometría generada superpuesta, puedes desactivar depth con `glDisable(GL_DEPTH_TEST)`.
+   * Para que el cubo o círculo no “floten” delante del triángulo original, habilita `glEnable(GL_DEPTH_TEST)` y ajusta `depth` o `polygonOffset` si hace falta.
+
+7. **Backface culling**:
+
+   * El GS puede descartar triángulos completos (si haces `return;` en la función `main()`).
+   * Pero también asegúrate de tener `glEnable(GL_CULL_FACE); glCullFace(GL_BACK);` para que OpenGL no dibuje las caras traseras del cubo (rendimiento).
+
+8. **Aspect Ratio y glViewport**:
+
+   * Cuando dividas la ventana en 2 columnas (`glViewport(0,0,w/2,h)` y luego `glViewport(w/2,0,w/2,h)`), **recalcula `camera()->setAspectRatio()`** antes de calcular las matrices de proyección.
+   * Ejemplo:
+
+     ```cpp
+     camera()->setAspectRatio(float(w/2)/float(h));
+     QMatrix4x4 MVP = camera()->projectionMatrix() * camera()->viewMatrix();
+     glViewport(0,0,w/2,h);
+     // dibuja primer pase
+     camera()->setAspectRatio(float(w/2)/float(h));
+     QMatrix4x4 MVP2 = camera()->projectionMatrix() * camera()->viewMatrix();
+     glViewport(w/2,0,w/2,h);
+     // dibuja segundo pase
+     // Finalmente restaurar:
+     camera()->setAspectRatio(float(w)/float(h));
+     ```
+
+9. **Uniforms condicionales**:
+
+   * Si tienes un `uniform int mode`, cambia su valor en tu plugin con un `switch` dentro de `keyPressEvent()`:
+
+     ```cpp
+     void MyPlugin::keyPressEvent(QKeyEvent* event) {
+         if (event->key() == Qt::Key_M) {
+             mode = (mode + 1) % 4;
+         }
+     }
+     ```
+
+     Luego, en `paintGL()`, antes de `program->bind()`, haces `program->setUniformValue("mode", mode);`.
+
+10. **Coordendas de textura para marginado**:
+
+    * Las caras del cubo (o del quad) viven en distintos planos. Por ello, al calcular `gTexCoord`, debes usar la componente correspondiente de `cubeVerts`.
+
+      * Cara XY (Z fijo) → `gTexCoord = (local.xy + 1.0)*0.5;`
+      * Cara XZ (Y fijo) → `gTexCoord = (local.xz + 1.0)*0.5;`
+      * Cara YZ (X fijo) → `gTexCoord = (local.zy + 1.0)*0.5;`
+    * Si simplemente usaras `local.xy` para todas las caras, las caras XZ/YZ tendrían valores de textura mal asignados, y verías caras completamente negras, como en tu depuración.
+
+11. **Max vertices** en GS:
+
+    * Asegúrate de no pasarte de `max_vertices`. Por ejemplo, para emitir un cubo de 12 triángulos = 36 vértices, usa `layout(triangle_strip, max_vertices = 36) out;`.
+    * Si quisieras emitir el triángulo original **más** el cubo, sumarías 3 + 36 = 39 vértices y tendrías que poner `max_vertices = 39`, pues de lo contrario el shader falla en compilación.
+
+12. **Interoperabilidad VS/GS/FS**:
+
+    * Cualquier `out` del VS que quieras usar en el GS debe declararse como `in TYPE nombre[];` en el GS.
+    * Cualquier `out` del GS que quieras usar en el FS debe declararse como `in TYPE nombre;` en el FS.
+    * Ejemplo:
+
+      ```glsl
+      // VS:
+      out vec3 vPos;
+      out vec3 vNormalEye;
+
+      // GS:
+      in vec3 vPos[];
+      in vec3 vNormalEye[];
+      out vec3 P;
+      out vec3 C;
+      ...
+      // FS:
+      in vec3 P;
+      in vec3 C;
+      ```
+    * Los “arrays” en el GS (`vPos[]`) tienen tamaño 3 para triángulos, 2 para líneas, etc.
+
+13. **Almacena los IDs de tus VAOs/VBOs/texturas** en miembros privados de tu clase plugin, para poder limpiarlos si lo deseas (aunque el viewer suele limpiar al finalizar).
+
+14. **Documenta tu código**: cada sección del GS (cálculo de centro, culling, offsets, asignación de `gTexCoord`) con comentarios que indiquen el propósito. ¡Ayuda a la legibilidad y depuración!
+
+15. **Si usas múltiples pases** (p. ej., shadow pass, forward pass, normal pass), lleva un orden claro:
+
+    ```cpp
+    // 1. Preparar FBO/texturas para shadow
+    // 2. Pintar escena a texturas (shadow gen)
+    // 3. Pintar escena final usando las texturas (shadow apply)
+    // 4. Pintar overlay/UI
+    ```
+
+---
+
+# 8. Checklist final antes de entregar un ejercicio con GS
+
+1. **Shaders**:
+
+   * VS: sin errores de compilación, confirma `log()`.
+   * GS:
+
+     * ¿`layout(triangles) in;` y `layout(triangle_strip, max_vertices = X) out;` correctos?
+     * ¿`gl_in[i].gl_Position` es la coordenada esperada (object vs clip)?
+     * ¿Culling opcional implementado (normal.z < 0)?
+     * ¿Centro C calculado correctamente?
+     * ¿Offsets calculados para cubo, quad, etc., con el tamaño adecuado (p.ej. 0.08 para lado 0.16)?
+     * ¿`EmitVertex()` y `EndPrimitive()` en los lugares correctos?
+     * ¿Se emiten `out` variables (color, P, C, gTexCoord) con valores correctos?
+   * FS:
+
+     * ¿Declara los `in` que envía el GS?
+     * ¿Aplica condiciones (márgenes, círculo, cut)?
+     * ¿Devuelve `fragColor` adecuado o `discard`?
+     * Comprueba `mode` y `opaque` si se usan.
+
+2. **Plugin C++**:
+
+   * **onPluginLoad**:
+
+     * `makeCurrent()` y `initializeOpenGLFunctions()`.
+     * Compilar y linkar ambos programas (VS/GS/FS y VS₂/FS₂).
+     * ¿Se usan `vs2` y `fs2` (no `vs` y `fs` por error)?
+     * Inicializar VAO/VBO/texturas si se usan.
+   * **paintGL**:
+
+     * `makeCurrent()`.
+     * Obtener `w`, `h`.
+     * Ajustar `camera()->setAspectRatio(...)` antes de calcular `MVP`.
+     * Primer `glViewport(0,0,w/2,h)` y bindear `programDepth`, pasar `MVP`, `drawScene()`, `release()`.
+     * Segundo `glViewport(w/2,0,w/2,h)` y bindear `programNormal`, pasar `MVP` y `NM`, `drawScene()`, `release()`.
+     * Restaurar aspect ratio general si hace falta.
+
+3. **Depuración visual**:
+
+   * Prueba primero dibujar TODO de un solo color (p.ej. `fragColor = vec4(1,0,0,1)`) para ver si tu GS emite geometría.
+   * Pon `fragColor = vec4(gTexCoord, 0,1)` para ver si las coords de textura llegan correctamente.
+   * Prueba `glDisable(GL_CULL_FACE)` y `glDisable(GL_DEPTH_TEST)` para descartar problemas de culling o de profundidad.
+   * Asigna `gfrontColor` basado en el centro C, p.ej. `vec4(C,1)`, para ver si los centros de triángulo tienen sentido.
+
+4. **Rendimiento**:
+
+   * Si emites muchos cubos/quad, la complejidad crece rápido.
+   * Para muchos triángulos, ten cuidado con `max_vertices` y con la cantidad total de vértices generados.
+   * Revisa la consola de OpenGL con `QOpenGLDebugLogger` o `glGetError()` si algo extraño sucede.
+
+5. **Gestión de memoria**:
+
+   * Si creas VAO/VBO, destrúyelos (aunque el viewer los limpia al salir).
+   * Si creas texturas y no las necesitas más, `glDeleteTextures(...)`.
+   * Libera punteros `vs`, `fs`, `program` en el destructor si implementas uno (`delete vs; delete fs; delete program;`).
+
+6. **Control de modos**:
+
+   * Usa `uniform int mode` y cámbialo con `keyPressEvent()`.
+   * Dibuja un texto en pantalla en `postFrame()` con `QPainter` para mostrar en tiempo real el modo activo.
+
+---
+
+# 9. Consejos adicionales y “tips & tricks”
+
+1. **Código limpio y modular**
+
+   * Separa la carga de shaders en un método `compileAndLinkShaders()`.
+   * Separa la inicialización de buffers en `initGeometry()`.
+   * Esto facilita volver a usar el plugin o hacer debug.
+
+2. **Evita “hardcodear” rutas**
+
+   * Usa siempre `g.getPluginPath() + "/../MyPlugin/shader.vert"` para poder cambiar de carpeta sin rehacer el código.
+
+3. **Comprueba versiones de OpenGL**
+
+   * Asegúrate de que tu sistema soporta **OpenGL 3.3+** para usar GS.
+   * Si usas funciones “mod” o “mix” en GLSL, comprueba que tu versión es al menos 330.
+
+4. **Visualiza contornos con wireframe**
+
+   * Para debug, activa `glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)` antes de `drawScene()` para ver la malla base.
+
+5. **Diferencia “flat” vs “smooth” interpolation**
+
+   * Si quieres que una variable pase *sin interpolar* del VS→GS o GS→FS, usa el qualifier `flat`:
+
+     ```glsl
+     flat in vec3 vNormalFlat; // en FS
+     ```
+   * Esto es útil cuando el GS asigna el mismo valor a toda la cara y no quieres que el rasterizador interpole ese valor.
+
+6. **Cuidado con “out” duplicados**
+
+   * Si tu GS define varios `out vec4 gfrontColor; out vec3 P; out vec2 gTexCoord;`, asegúrate de que el FS declare exactamente los mismos `in` (en mismo orden no importa, pero nombres y tipos sí).
+
+7. **Orden correcto de llamadas OpenGL**
+
+   * Siempre llama `g.makeCurrent()` antes de cualquier operación de OpenGL en tu plugin.
+   * Si tu plugin crea buffers/texturas, hazlo en `onPluginLoad()` o dentro de `makeCurrent()`. No intentes crear buffers antes de que el contexto exista.
+
+8. **Matrices y coordenadas**
+
+   * `camera()->projectionMatrix()` te da la matriz de proyección (con el aspect ratio ya aplicado cuando llamaste `setAspectRatio`).
+   * `camera()->viewMatrix()` te da la vista (cámara).
+   * `camera()->viewMatrix().normalMatrix()` es la inversa transpuesta de la parte 3×3 de la view, para transformar normales.
+
+9. **Añadir efectos condicionados**
+
+   * Para “efecto de decal” (p.ej. un polígono encima del otro), usa `glEnable(GL_POLYGON_OFFSET_FILL)` y `glPolygonOffset(1.0, 1.0)`. Para líneas, `glPolygonOffset(-1.0, -1.0)`.
+
+10. **Manejo de varias pasadas**
+
+    * Si tu plugin necesita varias pasadas (p.ej. shadow map pass, luego final pass), define varios FBOs y texturas, y haz:
+
+      ```cpp
+      // Pass 1: glBindFramebuffer(FBO1); glViewport(...) ; programShadow->bind(); drawScene(); …
+      // Pass 2: glBindFramebuffer(0); glViewport(...) ; programFinal->bind(); bind shadow map como textura; drawScene(); …
+      ```
+
+---
+
+## 10. Ejemplo completo de un plugin con GS
+
+Para que veas todo integrado de un tirón, aquí va un ejemplo ficticio de plugin que dibuja **un cubo en cada triángulo** solo si el centro tiene alguna coord < cut, y pinta un margen negro alrededor de cada cara. Tú adaptarías las rutas de los shaders:
+
+```cpp
+// CubePerTriPlugin.h
+#ifndef _CUBEPERTRIPLUGIN_H
+#define _CUBEPERTRIPLUGIN_H
+
+#include "plugin.h"
+#include <QOpenGLFunctions>
+
+class CubePerTriPlugin : public QObject,
+                         public Plugin,
+                         protected QOpenGLFunctions
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "Plugin")
+    Q_INTERFACES(Plugin)
+
+  public:
+    void onPluginLoad();
+    bool paintGL();
+    void keyPressEvent(QKeyEvent*);
+
+  private:
+    void compileShaders();
+
+    QOpenGLShader       *vs = nullptr, *gs = nullptr, *fs = nullptr;
+    QOpenGLShaderProgram *program = nullptr;
+
+    int mode = 1;
+    float cut = -0.25f;
+};
+
+#endif
+```
+
+```cpp
+// CubePerTriPlugin.cpp
+#include "CubePerTriPlugin.h"
+#include "glwidget.h"
+
+void CubePerTriPlugin::compileShaders()
+{
+    GLWidget &g = *glwidget();
+    g.makeCurrent();
+    initializeOpenGLFunctions();
+
+    // Vertex Shader
+    vs = new QOpenGLShader(QOpenGLShader::Vertex, this);
+    vs->compileSourceFile(g.getPluginPath() + "/../CubePerTri/cube.vert");
+
+    // Geometry Shader
+    gs = new QOpenGLShader(QOpenGLShader::Geometry, this);
+    gs->compileSourceFile(g.getPluginPath() + "/../CubePerTri/cube.geom");
+
+    // Fragment Shader
+    fs = new QOpenGLShader(QOpenGLShader::Fragment, this);
+    fs->compileSourceFile(g.getPluginPath() + "/../CubePerTri/cube.frag");
+
+    // Enlace
+    program = new QOpenGLShaderProgram(this);
+    program->addShader(vs);
+    program->addShader(gs);
+    program->addShader(fs);
+    program->link();
+
+    // Opcional: imprimir logs
+    qDebug() << "VS log:" << vs->log();
+    qDebug() << "GS log:" << gs->log();
+    qDebug() << "FS log:" << fs->log();
+    qDebug() << "Link log:" << program->log();
+}
+
+void CubePerTriPlugin::onPluginLoad()
+{
+    compileShaders();
+}
+
+bool CubePerTriPlugin::paintGL()
+{
+    GLWidget &g = *glwidget();
+    g.makeCurrent();
+
+    int w = g.width();
+    int h = g.height();
+
+    // Matrices
+    camera()->setAspectRatio(float(w) / float(h));
+    QMatrix4x4 MVP = camera()->projectionMatrix() * camera()->viewMatrix();
+
+    program->bind();
+    program->setUniformValue("modelViewProjectionMatrix", MVP);
+    program->setUniformValue("mode", mode);
+    program->setUniformValue("cut",  cut);
+
+    // Enable depth testing y culling para que se vean bien los cubos
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    drawPlugin()->drawScene();
+
+    program->release();
+
+    return true;
+}
+
+void CubePerTriPlugin::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_M) {
+        mode = (mode + 1) % 4; // ciclos de 0 a 3
+    }
+    if (event->key() == Qt::Key_C) {
+        cut -= 0.1f; // p.ej.
+    }
+    if (event->key() == Qt::Key_V) {
+        cut += 0.1f;
+    }
+}
+
+```
+
+```glsl
+// cube.vert
+#version 330 core
+layout(location = 0) in vec3 vertex;
+layout(location = 1) in vec3 normal;
+
+out vec3 vPos;
+out vec3 vNormalEye;
+
+uniform mat4 modelViewMatrix;
+uniform mat3 normalMatrix;
+
+void main() {
+    vPos = vertex;                              // object space
+    vNormalEye = normalize(normalMatrix * normal); // eye space
+    gl_Position = vec4(vertex, 1.0);            // enviamos object space al GS
+}
+```
+
+```glsl
+// cube.geom
+#version 330 core
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 36) out;
+
+in vec3 vPos[];
+in vec3 vNormalEye[];
+
+out vec4 gfrontColor;
+out vec2 gTexCoord;
+
+uniform int mode;
+uniform float cut;
+uniform mat4 modelViewProjectionMatrix;
+
+// Definir vértices de un cubo “unitario” en [-1,1]
+vec3 cubeVerts[8] = vec3[](
+    vec3(-1,-1,-1), vec3(1,-1,-1), vec3(-1,1,-1), vec3(1,1,-1),
+    vec3(-1,-1,1),  vec3(1,-1,1),  vec3(-1,1,1),  vec3(1,1,1)
+);
+
+// Índices para dibujar 12 triángulos (36 vértices) de un cubo
+int cubeFaces[36] = int[](
+    0,1,2, 2,1,3,   // cara -Z (0)
+    4,6,5, 5,6,7,   // cara +Z (1)
+    0,2,4, 4,2,6,   // cara -X (2)
+    1,5,3, 3,5,7,   // cara +X (3)
+    2,3,6, 6,3,7,   // cara +Y (4)
+    0,4,1, 1,4,5    // cara -Y (5)
+);
+
+void main() {
+    // Calcular centro C del triángulo en object space
+    vec3 C = (vPos[0] + vPos[1] + vPos[2]) / 3.0;
+
+    // Modo 3: solo si algún componente de C < cut
+    if (mode == 3 && C.x >= cut && C.y >= cut && C.z >= cut) {
+        return; // descartar todo el triángulo
+    }
+
+    float halfSize = 0.08; // cubo de arista 0.16
+
+    for (int i = 0; i < 36; ++i) {
+        vec3 local = cubeVerts[cubeFaces[i]] * halfSize;
+        vec3 worldPos = C + local;
+
+        gl_Position = modelViewProjectionMatrix * vec4(worldPos, 1.0);
+
+        // Color según centro C, mapeando [-1,1]→[0,1]
+        vec3 rgb = (C + vec3(1.0)) * 0.5;
+        gfrontColor = vec4(rgb, 1.0);
+
+        // Coordenadas de textura para margen (modo 2 y 3)
+        if (mode >= 2) {
+            int faceId = i / 6; // cada cara = 6 vértices (2 triángulos)
+            if (faceId == 0 || faceId == 1)      // caras Z (plano XY)
+                gTexCoord = (local.xy + vec2(1.0)) * 0.5;
+            else if (faceId == 2 || faceId == 3) // caras X (plano YZ)
+                gTexCoord = (local.zy + vec2(1.0)) * 0.5;
+            else                                  // caras Y (plano XZ)
+                gTexCoord = (local.xz + vec2(1.0)) * 0.5;
+        }
+
+        EmitVertex();
+        if (i % 3 == 2) {
+            EndPrimitive();
+        }
+    }
+}
+```
+
+```glsl
+// cube.frag
+#version 330 core
+
+in vec4 gfrontColor;
+in vec2 gTexCoord;
+
+out vec4 fragColor;
+
+uniform int mode;
+
+void main() {
+    // Modo 2 y 3: margen negro
+    if (mode >= 2) {
+        if (gTexCoord.x < 0.05 || gTexCoord.x > 0.95 ||
+            gTexCoord.y < 0.05 || gTexCoord.y > 0.95) {
+            fragColor = vec4(0.0);
+            return;
+        }
+    }
+
+    fragColor = gfrontColor;
+}
+```
+
+* **VS** solo pasa `vPos` y `vNormalEye`, y deja `gl_Position = vec4(vertex,1)`.
+* **GS** calcula el centro del triángulo `C`, descarta el triángulo si `mode==3 && C.x>=cut&&C.y>=cut&&C.z>=cut`. Luego genera 36 vértices para el cubo, asigna color en función de `C`, calcula `gTexCoord` dependiendo de qué cara del cubo esté emitiendo (XY, YZ o XZ), y llama a `EmitVertex()`/`EndPrimitive()`.
+* **FS** aplica “margen negro” si `mode>=2` según `gTexCoord`; si no, pinta `gfrontColor`.
+
+---
+
+

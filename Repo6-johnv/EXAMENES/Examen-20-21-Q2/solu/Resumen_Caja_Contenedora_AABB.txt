@@ -1,0 +1,61 @@
+
+===========================================
+CÓMO CALCULAR PUNTOS EN UNA CAJA CONTENEDORA (AABB)
+===========================================
+
+📦 ¿QUÉ ES UNA CAJA CONTENEDORA?
+
+Una caja contenedora (Axis-Aligned Bounding Box, AABB) se define por:
+- Punto mínimo: vec3 min = vec3(xmin, ymin, zmin);
+- Punto máximo: vec3 max = vec3(xmax, ymax, zmax);
+
+Toda la geometría está contenida entre estos dos extremos.
+
+-------------------------------------------
+🎯 CÓMO CALCULAR UN PUNTO DENTRO DE LA CAJA
+
+Si tienes un punto UVW con coordenadas normalizadas (∈ [0, 1]³), puedes obtener su posición real en la caja así:
+
+    vec3 P = mix(min, max, uvw);
+
+Esto hace una interpolación entre min y max en cada eje.
+
+✅ Ejemplo:
+    uvw = vec3(0.5, 0.5, 0.5); → devuelve el centro de la caja
+
+-------------------------------------------
+🔍 CÓMO SABER SI UN PUNTO ESTÁ DENTRO DE LA CAJA
+
+Forma simple:
+    bool inside = (P.x >= min.x && P.x <= max.x &&
+                   P.y >= min.y && P.y <= max.y &&
+                   P.z >= min.z && P.z <= max.z);
+
+Forma compacta (GLSL):
+    bool inside = all(greaterThanEqual(P, min)) && all(lessThanEqual(P, max));
+
+-------------------------------------------
+🌀 USO EN SHADERS (EJEMPLO)
+
+Recorremos la caja en el eje Z:
+
+    for (float z = 0.0; z <= 1.0; z += stepZ) {
+        vec3 uvw = vec3(uv.x, uv.y, z); // coordenadas normalizadas
+        vec3 P = mix(min, max, uvw);    // punto 3D dentro de la caja
+        // Aquí puedes usar P para iluminación, muestreo, blending, etc.
+    }
+
+-------------------------------------------
+📏 TAMAÑO DE LA CAJA
+
+    vec3 size = max - min;
+
+Esto da las dimensiones en cada eje.
+
+-------------------------------------------
+💡 APLICACIONES
+
+- Iluminación volumétrica
+- Sampling 3D de densidades
+- Efectos dentro de una región del espacio
+- Bounding volume checks
