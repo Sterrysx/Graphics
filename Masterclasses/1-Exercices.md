@@ -166,6 +166,25 @@ void main()
 
 ![alt text](image-1.png)
 
+```glsl
+Escriu VS+FS per deformar el model en direcció vertical (eix Y en model space), per obtenir 
+una aparença similar a la d’alguns animals en quadres de Salvador Dalí: 
+
+El VS deformarà el model modificant únicament la coordenada Y en model space: 
+
+Sigui c el resultat d’interpolar linealment boundingBoxMin.y i boundingBoxMax.y, 
+segons un paràmetre d’interpolació t, uniform float t = 0.4. 
+
+Si la coordenada Y és inferior a c, el VS li aplicarà l’escalat donat per uniform float 
+scale = 4.0 per tal d’allargar les potes del model. Altrament, no li aplicarà cap escalat, 
+però sí una translació Δ en Y. Per calcular Δ, observeu que per tenir continuïtat
+a y=c, llavors c*scale = c + Δ (aïlleu Δ).
+
+Degut a que no estem recalculant els plans de clipping, és possible que el model surti retallat. 
+
+El FS farà les tasques habituals. 
+```
+
 ### 1.2-Vertex Shader
 
 ```glsl
@@ -259,6 +278,44 @@ void main()
 ### 2.1-Enunciado
 
 ![alt text](image-2.png)
+
+```
+Volem simular l’animació d’un dofí nadant. Per aconseguir-ho cal que el VS deformi el model tenint en
+compte les següents indicacions. L’animació durarà un segon i s’anirà repetint en el temps (caldrà fer servir
+una funció sinusoïdal amb un període apropiat). Per tal d’aplicar les transformacions corresponents
+dividirem el dofí en dues meitats i aplicarem una rotació a cada meitat en funció del temps.
+
+Model: Per al model dolphin.obj amb els següents punts (tingueu en compte que els valors de cada punt
+de la figura són en relació a la llargària de la caixa contenidora en direcció Y): 
+
+Punts de rotació: La rotació de cada meitat serà al voltant d’un eix paral·lel a l’eix X i que passa per un
+punt de la forma (0,y,0), on la y varia segons la meitat. Per la meitat davantera, el punt de rotació serà RD,
+i per la meitat posterior el punt de rotació serà RT. 
+
+Transició de la deformació: La transformació s’aplicarà de manera suau (combinant amb smoothstep els
+vèrtexs originals i els transformats) en l’eix Y des del punt TD1 (on no hi haurà cap transformació) fins al
+punt TD2 (on la transformació serà màxima) per la part davantera, i des de TT1 fins a TT2 per la part
+posterior. 
+
+Angles de la rotació: L’angle de rotació per la part davantera variarà en [-PI/32, PI/32], i per la part
+posterior en [-PI/4, 0]. Tingueu en compte que les rotacions seran en sentits oposats, fent que el cap i la cua
+pugin i baixin a l’hora amb un petit offset de temps. 
+
+Offset entre parts: L’animació de la part davantera començarà 0.25 segons abans que la de la part
+posterior. És a dir, si usem time = 0 en l’animació de la part posterior, la part davantera es comportarà com
+si time = 0.25. 
+
+El color del dofí serà el gris clar (0.8, 0.8, 0.8), al qual el VS aplicarà il·luminació bàsica tenint en compte
+la component Z de la normal en eye space. 
+
+El FS farà els càlculs imprescindibles per a la visualització. Aquí tens els resultats esperats amb el model
+dolphin.obj per a diferents instants de temps (t=0s, 1.25s, 2.75s):
+
+Identificadors (ús obligatori):
+dolphin.vert, dolphin.frag
+uniform float time;
+const float PI = 3.1416; 
+```
 
 ### 2.2-Vertex Shader
 
@@ -384,6 +441,28 @@ void main()
 
 ![alt text](image-7.png)
 
+``` glsl
+Escriviu VS+FS que simulin l'expansió i compressió cícliques del model 3D com si fos 
+una molla (vegeu el vídeo spring.mp4 al zip de l'enunciat).
+
+El VS s'encarregarà de l'animació, que tindrà dues fases que es repetiran cada 3.5 segons.
+
+La primera fase (expansió) tindrà una durada de 0.5 segons i mourà els vèrtexs des de l'origen de coordenades 
+fins a la seva posició original en model space. Per a calcular la interpolació linial entre aquestes dues 
+posicions, feu que el paràmetre d'interpolació linial sigui (t/0.5)³, on t és el temps en segons
+des de l'inici del periode (per exemple, quan time = 4, t = 0.5).
+
+La segona fase (compressió) tindrà una durada de 3 segons, i mourà els vèrtexs des de la seva posició inicial 
+en model space cap a l'origen. Ara però volem que els vèrtexs es moguin a velocitat uniforme. Penseu com heu 
+de calcular el paràmetre d'interpolació lineal, a partir d'un valor t que dins de cada període 
+estarà dins l'interval [0.5, 3.5).
+
+Un cop calculada la posició del vèrtex en model space, caldrà transformar-lo a clip space com feu usualment. 
+El color del vèrtex serà el gris que té per components la Z de la normal en eye space.
+
+El FS farà les tasques per defecte.
+```
+
 ### 3.2-Vertex Shader
 
 ```glsl
@@ -500,6 +579,34 @@ void main()
 ### 1.1-Enunciado
 
 ![alt text](image-3.png)
+
+``` glsl
+Volem simular uns binocles que ens acosten els detalls d'una textura que ocupa tot el 
+viewport, com en aquestes imatges:
+
+Aquest exercici sols funciona amb l'objecte plane.obj, texturat amb l'escena triada. Per resoldre'l, has d'implementar:
+
+1.Un VS que sols emet les coordenades de textura de cada vèrtex, i les coordenades de cada vèrtex del model, com si ja 
+estiguessin en coordenades de clipping (val a dir que has de fer servir la identitat com a ModelViewProjectionMatrix.
+
+Us proporcionem un arxiu blur.glsl que conté una funció que heu de fer servir al vostre FS. Aquesta funció mostreja 
+una textura (s'hi accedeix amb el sampler2D jungla), en les coordenades que rep com paràmetre, però la desenfoca. 
+Coloregeu els fragments amb el resultat retornat per aquesta funció, obtenint un viewport 
+omplert per la textura triada, però desenfocada.
+
+Afegirem ara els binocles. Per posicionar-los, farem servir el uniform vec2 mousePositon, que ens dona les coordenades 
+del ratolí en aquell moment, en píxels, amb l'origen de coordenades a la cantonada inferior esquerra del viewport. 
+També disposem del uniform vec2 viewport que ens retorna l'amplada i alçada del viewport en píxels. Per una posició 
+donada del ratolí, la part transparent dels binocles consisteix de dos cercles superposats de radi 100 píxels, centrats en 
+dos punts 80 píxels a esquerra i dreta del ratolí. La vorera negra dels binocles son la part que cau fora d'aquesta porció 
+transparent, de dos circumferències de gruix 5 píxels. Afegeix codi al teu shader que dibuixi la vorera, i que estigui 
+preparat per acolorir els píxels de la porció transparent de forma diferent a la resta. (pista: fixeu-vos que podeu 
+fer servir les coordenades de textura com a coordenades, i podeu convertir a píxels usant viewport).
+
+Ja sols queda simular l'òptica dels binocles. El uniform float magnific indicarà el factor d'augment que volem que tinguin. 
+Així, donarem a cada fragment F dins dels binocles el color de la textura en un punt P que es troba entre F i el ratolí, 
+i tal que la dist(F,ratolí) és igual a magnific*dist(P, ratolí).
+```
 
 ### 1.2-Vertex Shader
 
@@ -635,6 +742,27 @@ void main()
 ### 2.1-Enunciado
 
 ![alt text](image-4.png)
+
+``` glsl
+Escriviu VS+FS per tal de dibuixar quelcom similar a una pantalla del conegut Space Invaders. 
+
+Observeu que la darrera columna de la textura inclou un canó blanc i un escut verd.
+
+El VS farà les tasques imprescindibles.
+
+El FS serà l'encarregat de triar el color del fragment, d'acord amb les coordenades de textura que rebrà del VS, 
+i que per l'objecte plane estan dins [0,1].
+
+Per tal d'aconseguir la màxima puntuació, caldrà que:
+
+Hi hagi un canó blanc a la part inferior (4 punts)
+
+Hi hagi alguns escuts en una fila per sobre del canó (3 punts)
+
+Hi hagi com a mínim 6 fileres amb els extraterrestres invasors; cada filera mostrarà un únic tipus d'extraterrestre (3 punts).
+
+
+```
 
 ### 2.2-Vertex Shader
 
@@ -831,6 +959,14 @@ void main()
 
 ![alt text](image-8.png)
 
+``` glsl
+Escriu VS+FS que, amb l’objecte plane.obj, dibuixi de forma procedural una bandera similar a aquesta: 
+
+El VS farà les tasques imprescindibles, escalant la coordenada Y per tal que la relació d’aspecte sigui 2:1.
+
+El FS calcularà el color per tal reproduir quelcom semblant a la figura. 
+```
+
 ### 3.2-Vertex Shader
 
 ```glsl
@@ -932,6 +1068,261 @@ void main()
 ---
 
 
+---
+
+## Ejemplo 4-Beach
+
+### 4.1-Enunciado
+
+![alt text](image-17.png)
+
+``` glsl
+Escriu un VS i un FS per tal de simular una finestra a través de la qual es pot veure una palmera moguda pel vent, i un fons.
+
+La composició que volem obtenir (amb l’objecte plane.obj) la teniu a la dreta.
+El VS, a banda de les tasques imprescindibles, li passarà al FS la normal N
+en eye space.
+El FS usarà tres textures, que haureu de declarar així:
+ uniform sampler2D window; // interior
+ uniform sampler2D palm1; // palm-tree
+ uniform sampler2D background2; // dunes
+Primer accedirà a la textura window (amb les coordenades de textura habituals)
+per obtenir un color que li direm C.
+Si la component alfa de C és 1.0 (part opaca de la finestra), el color del fragment serà C.
+Si la component alfa de C és inferior a 1.0, per calcular el color del fragment s’accedirà a la textura palm1
+amb coordenades de textura vtexCoord + 0.25*N.xy + vec2(0.1*sin(2*time)*vtexCoord.t, 0) per obtenir
+un color que li direm D.
+Si la component alfa de D és superior o igual a 0.5 (part opaca de la palmera), el color del fragment serà D.
+Altrament, el color del fragment serà el color de la textura background2 al punt vtexCoord + 0.5*N.xy.
+Observeu que estem usant un offset en les coordenades de textura que depèn de les components de la normal
+en eye space. Degut a aquest offset, la part visible de la palmera i del fons dependrà de l’orientació del
+model. En el cas de la palmera, també hi ha un desplaçament horitzontal que depèn del temps, per simular
+l’ondulació produïda pel vent.
+```
+
+### 4.2-Vertex Shader
+
+```glsl
+#version 330 core
+
+// --- INPUTS (from your 3D model) ---
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+// --- OUTPUTS (to the Fragment Shader) ---
+out vec2 vtexCoord; // Pasa la coordenada de textura
+out vec3 v_normal_eye;
+
+// --- UNIFORMS (from the viewer) ---
+uniform mat4 modelViewProjectionMatrix;
+uniform mat3 normalMatrix;
+
+void main()
+{
+    // Pasa la coordenada de textura
+    vtexCoord = texCoord;
+
+    // Pasar la normal en Eye Space al fragment shader
+    v_normal_eye = normalize(normalMatrix*normal);
+
+    // Calcula la posición final
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0);
+}
+```
+
+### 4.3-Fragment Shader
+
+```glsl
+#version 330 core
+
+// --- INPUT (from the Vertex Shader) ---
+in vec2 vtexCoord;
+in vec3 v_normal_eye;
+
+// --- OUTPUT ---
+out vec4 fragColor;
+
+// --- UNIFORMS ---
+uniform float time;
+uniform sampler2D window;
+uniform sampler2D palm1; // observeu el dígit 1 al final
+uniform sampler2D background2; // observeu el dígit 2 al final
+
+// Definicion colores
+const vec4 COLOR_BLACK  = vec4(0.0, 0.0, 0.0, 1.0);
+
+void main()
+{
+    vec3 N = normalize(v_normal_eye);
+    vec4 finalColor = COLOR_BLACK;
+
+    // textura window (amb les coordenades de textura habituals)
+    vec4 C = texture(window, vtexCoord);
+
+    // Si Alpha de C = 1.0, finalColor = C
+    if (C.a == 1.0) finalColor = C;
+    else if (C.a < 1.0) {
+
+        vec2 term2 = 0.25 * N.xy;
+        vec2 term3 = vec2(0.1*sin(2.0*time)*vtexCoord.t, 0.0);
+        vec2 palmCoord = vtexCoord + term2 + term3;
+
+        vec4 D = texture(palm1, palmCoord);
+
+        if (D.a >= 0.5) finalColor = D;
+        else {
+            vec2 backCoords = vtexCoord + 0.5 * N.xy;
+            finalColor = texture(background2, backCoords);
+        }
+
+    }
+
+    fragColor = finalColor;
+}
+```
+
+## Ejemplo 5-Halloween2
+
+### 3.1-Enunciado
+
+![alt text](image-18.png)
+
+``` glsl
+Escriu VS+FS que, amb l’objecte plane.obj, dibuixi de forma procedural una carbassa similar a aquesta:
+[La puntuació dels apartats és orientativa]
+El VS [2 punts] farà les tasques imprescindibles, escalant la coordenada X per tal que la relació d’aspecte
+sigui 4:3.
+El FS [8 punts] calcularà el color per tal de reproduir quelcom semblant a la figura, utilitzant les
+coordenades de textura del fragment.
+Els elements que heu de reproduir són:
+1. Color de fons [2 punts]: un gradient radial de color, de taronja a negre.
+2. La carbassa elíptica i el peduncle rectangular [2 punts], de color negre o gris proper al negre.
+3. Els ulls [2 punts], de color de fons.
+4. La boca [2 punts], delimitada per dos cercles, també de color de fons. 
+
+```
+
+### 3.2-Vertex Shader
+
+```glsl
+#version 330 core
+
+// --- INPUTS (from your 3D model) ---
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+// --- OUTPUTS (to the Fragment Shader) ---
+out vec2 vtexCoord;
+
+// --- UNIFORMS (from the viewer) ---
+uniform mat4 modelViewProjectionMatrix;
+
+void main()
+{
+    vtexCoord = texCoord;
+    
+    // Create a new vertex variable
+    vec4 new_vertex = vec4(vertex, 1.0);
+    
+    // Scale the X coordinate by 4/3 to make the
+    // 1x1 plane into a (4:3 aspect ratio) rectangle
+    new_vertex.x = new_vertex.x * float(4.0/3.0);
+
+    // Calculate the final position using the MODIFIED vertex
+    gl_Position = modelViewProjectionMatrix * new_vertex;
+}
+```
+
+### 3.3-Fragment Shader
+
+```glsl
+#version 330 core
+
+// --- INPUT (del Vertex Shader) ---
+in vec2 vtexCoord;
+
+// --- OUTPUT ---
+out vec4 fragColor;
+
+// --- CONSTANTS (Definimos los colores y formas) ---
+const vec4 COLOR_BLACK   = vec4(0.0, 0.0, 0.0, 1.0);
+const vec4 COLOR_GRAY   = vec4(0.25, 0.25, 0.25, 1.0);
+const vec4 COLOR_ORANGE = vec4(1.0, 0.75, 0.0, 1.0);
+
+// --- Constantes del Círculo Azul ---
+const float BLUE_CIRCLE_RADIUS = 0.12;
+const vec2  BLUE_CENTER_TEX = vec2(0.5, 0.5); // Centro de la pantalla
+
+void main()
+{    
+
+    // 0. Preparar variables
+    vec2 center = vec2(0.5, 0.5);
+    vec2 coord; 
+    coord.x = (vtexCoord.s - center.s);
+    coord.y = vtexCoord.t - center.t;
+    float dist = length(coord);
+    // coord va de -0,5 a 0,5, siendo 0.0 el mínimo
+
+    // 1. Empezar con el fondo negro
+    vec4 finalColor = COLOR_BLACK;
+
+    // 2. Hacer difuminado circulo naranja
+    float radius = 0.5; // Radio del fundido
+    float t = clamp(dist / radius, 0.0, 1.0);
+    finalColor = mix(COLOR_ORANGE, COLOR_BLACK, t);
+
+    // 3. Círculo cara
+    float faceRadius = 0.3;         // Radio del círculo
+    bool faceCircle = dist < faceRadius;
+
+    // 4. Hat
+    float min_X = -0.025;
+    float min_Y = 0.3;
+    float max_X = 0.025;
+    float max_Y = 0.4;
+
+    bool hat =  coord.s > min_X && coord.s < max_X &&
+                coord.t > min_Y && coord.t < max_Y;
+
+    // 5. Ojos
+    vec2 left_eye_center = vec2(-0.1, 0.12);
+    float eye_radius = 0.075;
+    float distance_left = distance(coord, left_eye_center);
+    bool leftEye = distance_left < eye_radius;
+
+    vec2 right_eye_center = vec2(0.1, 0.12);
+    float distance_right = distance(coord, right_eye_center);
+    bool rightEye = distance_right < eye_radius;
+
+    // 6. Mouth
+    vec2 centerM = vec2(0.0, 0.0);
+    float outer_radiusM = 0.2;
+    float distM = distance(coord, centerM);
+
+    vec2 centerM2 = vec2(0.0, 0.05);
+    float outer_radiusM2 = 0.25;
+    float distM2 = distance(coord, centerM2);
+
+    bool semiCircle1 = distM < outer_radiusM && coord.y < 0.0;
+    bool semiCircle2 = distM2 < outer_radiusM && coord.y < 0.0;
+    bool mouth = semiCircle1 &&  !semiCircle2;
+
+    // 7. pintar
+    bool isBody = faceCircle || hat;
+    bool isHole = leftEye || rightEye || mouth;
+    if (isBody && !isHole) finalColor = COLOR_GRAY;
+
+    fragColor = finalColor;
+}
+```
+
+---
+
 
 
 
@@ -956,6 +1347,22 @@ void main()
 ### 1.1-Enunciado
 
 ![alt text](image-5.png)
+
+```glsl
+Escriu VS+FS per aplicar ilꞏluminació de Phong per fragment, amb 8 llums fixos respecte l’escena.
+Concretament, les posicions dels llums en world space coincidiran amb els 8 vèrtexs de la capsa
+contenidora de l’escena (useu boundingBoxMin i boundingBoxMax per obtenir la posició d’aquests
+llums).
+El VS farà les tasques habituals i passarà al FS les dades necessàries (vèrtex i normal) pel càlcul
+d’ilꞏluminació.
+El FS calcularà el color del fragment acumulant la contribució dels 8 llums. Per evitar imatges massa
+saturades, useu per cada llum l’expressió
+∑ Kd Id (NꞏLi)/𝟐 + Ks Is (RiꞏV)s
+la qual ignora la contribució ambient i divideix la contribució difosa per 𝟐.
+Pels llums i material usa les propietats habituals (matDiffuse, matSpecular, lightDiffuse, lightSpecular...).
+Vigila amb l’eficiència, per exemple, mira de no fer crides innecessàries a normalize(). 
+
+```
 
 ### 1.2-Vertex Shader
 
@@ -1094,6 +1501,32 @@ void main()
 
 ![alt text](image-6.png)
 
+``` glsl
+Escriviu VS+FS per aplicar il·luminació de Phong per fragment, amb n llums fixos respecte la càmera, on n 
+és un uniform int n=4. Aquí tens l'esfera amb n=1-5 llums:
+
+Aquí la teniu:
+
+Nlights (nlights.*)
+
+Escriviu VS+FS per aplicar il·luminació de Phong per fragment, amb n llums fixos respecte la càmera, 
+on n és un uniform int n=4. Aquí tens l'esfera amb n=1-5 llums:
+
+[Imatges de 5 esferes il·luminades progressivament per més llums]
+
+Els llums estaran situats al voltant d'un cercle de radi 10 situat al pla Z=0 de la càmera i centrat a la càmera. 
+El primer llum estarà situat al punt de coordenades eye space (10, 0, 0), i la resta estaran equidistribuïts 
+seguint el cercle, com es mostra a la figura per n=1-3 llums:
+
+El VS farà les tasques habituals i passarà al FS les dades necessàries (vèrtex i normal) pel càlcul d'il·luminació.
+El FS calcularà el color del fragment acumulant la contribució dels n llums. Per evitar imatges massa saturades, useu  l'expressió ...
+Aquí teniu la copa amb n=1,3,5 llums:[Imatges d'una copa renderitzada amb 1, 3 i 5 llums]Vigila amb l'eficiència, 
+per exemple, mira de no fer crides innecessàries a normalize().
+Identificadors obligatoris:
+uniform int n = 4;
+const float pi = 3.141592;
+```
+
 ### 2.2-Vertex Shader
 
 ```glsl
@@ -1216,44 +1649,121 @@ void main()
 
 ---
 
-## Ejemplo 3-
+## Ejemplo 3-Boundary
 
 ### 3.1-Enunciado
 
+![alt text](image-19.png)
 
+``` glsl
+Escriu un VS+FS per obtenir una il·luminació que resalti les “vores” de l’objecte:
+El VS haurà de fer les tasques imprescindibles, enviant al FS la posició P i la normal unitària N del vèrtex,
+tots dos en eye space.
+El FS calcularà el color a partir de dos uniforms,
+uniform float edge0 = 0.35;
+uniform float edge1 = 0.4;
+Primer, caldrà calcular un vector unitari V (view vector) en la direcció del segment que uneix la càmera
+amb el punt P que estem tractant. A partir d’aquí, calculeu (usant el producte escalar) el cosinus de l’angle
+que formen els vectors N i –V. Sigui c aquest cosinus (feu tots els càlculs anteriors en eye space).
+Observeu que, pels punts prop de la vora de l’objecte, els vectors N i –V formaran un angle proper als 90
+graus, amb un cosinus proper a 0. Per tant, el valor de c és una mesura de “distància“ a la vora de l’objecte.
+El color del fragment (blanc, gris, negre) dependrà de c:
+ Si c < edge0 (P és a prop de la vora de l’objecte), el color serà negre.
+ Si c > edge1 (P és lluny de la vora de l’objecte), el color serà blanc.
+ Per valors de c entre edge0 i edge1, useu la funció smoothstep per obtenir una transició suau entre
+negre i blanc.
+Identificadors (ús obligatori):
+boundary.vert, boundary.frag (minúscules!)
+uniform float edge0 = 0.35;
+uniform float edge1 = 0.4;
+
+```
 
 ### 3.2-Vertex Shader
 
 ```glsl
+#version 330 core
 
+// --- INPUTS (from your 3D model) ---
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord;
+
+// --- OUTPUTS (to the Fragment Shader) ---
+out vec2 vtexCoord;
+out vec3 v_normal_eye;   
+out vec3 v_position_eye; 
+
+// --- UNIFORMS (from the viewer) ---
+uniform mat3 normalMatrix;   
+uniform mat4 modelViewMatrix; 
+uniform mat4 projectionMatrix;
+
+void main()
+{
+    // Pass the texture coordinate
+    vtexCoord = texCoord;
+
+    // --- "Pass Eye Position" Logic ---
+    vec4 pos_eye_4 = modelViewMatrix * vec4(vertex, 1.0);
+    v_position_eye = vec3(pos_eye_4);
+
+    // --- "Pass Normal" Logic ---
+    v_normal_eye = normalize(normalMatrix * normal);
+    
+    // --- "Pass Eye Position" Logic (continued) ---
+    gl_Position = projectionMatrix * pos_eye_4;
+}
 ```
 
 ### 3.3-Fragment Shader
 
 ```glsl
+#version 330 core
 
+// --- INPUT (from the Vertex Shader) ---
+in vec2 vtexCoord;
+in vec3 v_normal_eye;   // Interpolated Normal in Eye Space
+in vec3 v_position_eye; // Interpolated Position in Eye Space
+
+// --- OUTPUT ---
+out vec4 fragColor;
+uniform float edge0 = 0.35;
+uniform float edge1 = 0.4;
+
+// Definim com a constants colors
+const vec4 COLOR_WHITE  = vec4(1.0, 1.0, 1.0, 1.0);
+const vec4 COLOR_BLACK  = vec4(0.0, 0.0, 0.0, 1.0);
+
+void main()
+{
+    // assignem valor per defecte
+    vec4 finalColor = COLOR_BLACK;
+    
+    // normalitza N
+    vec3 N = normalize(v_normal_eye);
+
+    // vector unitari (normalitzar) V que uneix 2 punts la càmera amb P
+    // V = càmera - P (però càmera és 0.0)
+    vec3 V = normalize(vec3(0.0, 0.0, 0.0) - v_position_eye);
+    
+    // calcular el cosinus, el retorna directament el producte escalar.
+    float c = dot(N, V);
+
+    
+    if (c < edge0) {
+        finalColor = COLOR_BLACK;
+    } 
+    else if (c > edge1) {
+        finalColor = COLOR_WHITE;
+    }
+    else if (c >= edge0 && c <= edge1) {
+        float t = smoothstep(edge0, edge1, c);
+        finalColor = mix(COLOR_BLACK, COLOR_WHITE, t);
+    }
+
+    fragColor = finalColor;
+}
 ```
-
 ---
-
-## Ejemplo 3-
-
-### 3.1-Enunciado
-
-
-
-### 3.2-Vertex Shader
-
-```glsl
-
-```
-
-### 3.3-Fragment Shader
-
-```glsl
-
-```
-
----
-
-

@@ -1,0 +1,429 @@
+<!DOCTYPE html><html><head>
+      <title>1-ResumMogger</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="guia-completa-de-shaders-glsl">Guia Completa de Shaders GLSL </h1>
+<blockquote>
+<p><strong>Important:</strong> Els shaders d'aquesta guia estan pensats per ser executats amb el GLarena Viewer ubicat a:</p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>~/assig/grau-g/Viewer/GLarenaSL
+</code></pre></blockquote>
+<h2 id="1-estructura-bàsica-dels-shaders">1. Estructura Bàsica dels Shaders </h2>
+<h3 id="vertex-shader">Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// Input attributes</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> vertex<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> normal<span class="token punctuation">;</span> 
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> color<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> texCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// Output variables</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec4">vec4</span> frontColor<span class="token punctuation">;</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// Uniforms comuns</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> modelViewProjectionMatrix<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat3">mat3</span> normalMatrix<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> modelViewMatrix<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> projectionMatrix<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> time<span class="token punctuation">;</span>
+</code></pre><h3 id="fragment-shader">Fragment Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec4">vec4</span> frontColor<span class="token punctuation">;</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec4">vec4</span> fragColor<span class="token punctuation">;</span>
+</code></pre><h2 id="2-variables-uniformes-importants">2. Variables Uniformes Importants </h2>
+<ul>
+<li><code>modelViewProjectionMatrix</code>: Matriu combinada de model, vista i projecció</li>
+<li><code>modelViewMatrix</code>: Matriu de model i vista</li>
+<li><code>projectionMatrix</code>: Matriu de projecció</li>
+<li><code>normalMatrix</code>: Matriu per transformar normals</li>
+<li><code>time</code>: Variable de temps per animacions</li>
+<li><code>mousePosition</code>: Posició del ratolí</li>
+<li><code>viewport</code>: Dimensions de la finestra</li>
+</ul>
+<h2 id="21-uniforms-específics-del-viewer-core-profile">2.1. Uniforms Específics del Viewer (Core Profile) </h2>
+<h3 id="matrius">Matrius </h3>
+<ul>
+<li><code>modelMatrix</code> (mat4): Model space → World space</li>
+<li><code>viewMatrix</code> (mat4): World space → Eye space</li>
+<li><code>projectionMatrix</code> (mat4): Eye space → Clip space</li>
+<li><code>modelViewMatrix</code> (mat4): Model space → Eye space</li>
+<li><code>modelViewProjectionMatrix</code> (mat4): Model space → Clip space</li>
+<li><code>modelMatrixInverse</code> (mat4): World space → Model space</li>
+<li><code>viewMatrixInverse</code> (mat4): Eye space → World space</li>
+<li><code>projectionMatrixInverse</code> (mat4): Clip space → Eye space</li>
+<li><code>modelViewMatrixInverse</code> (mat4): Eye space → Model space</li>
+<li><code>modelViewProjectionMatrixInverse</code> (mat4): Clip space → Model space</li>
+<li><code>normalMatrix</code> (mat3): Matriu per transformar normals (Model space → Eye space)</li>
+</ul>
+<h3 id="illuminació">Il·luminació </h3>
+<ul>
+<li><code>lightAmbient</code> (vec4): Color ambient RGBA</li>
+<li><code>lightDiffuse</code> (vec4): Color difús RGBA</li>
+<li><code>lightSpecular</code> (vec4): Color especular RGBA</li>
+<li><code>lightPosition</code> (vec4): Posició de la llum en eye space (x,y,z,w). Si w=0 és direccional</li>
+</ul>
+<h3 id="materials">Materials </h3>
+<ul>
+<li><code>matAmbient</code> (vec4): Color ambient del material RGBA</li>
+<li><code>matDiffuse</code> (vec4): Color difús del material RGBA</li>
+<li><code>matSpecular</code> (vec4): Color especular del material RGBA</li>
+<li><code>matShininess</code> (float): Brillantor del material (exponent especular)</li>
+</ul>
+<h3 id="geometria-i-interacció">Geometria i Interacció </h3>
+<ul>
+<li><code>boundingBoxMin</code> (vec3): Cantonada mínima de la capsa englobant en model space</li>
+<li><code>boundingBoxMax</code> (vec3): Cantonada màxima de la capsa englobant en model space</li>
+<li><code>mousePosition</code> (vec2): Coordenades del cursor en window space (x,y) amb origen a la cantonada inferior esquerra</li>
+</ul>
+<h2 id="3-funcions-matemàtiques-útils">3. Funcions Matemàtiques Útils </h2>
+<h3 id="trigonométriques">Trigonométriques </h3>
+<ul>
+<li><code>sin()</code>, <code>cos()</code>, <code>tan()</code></li>
+<li><code>asin()</code>, <code>acos()</code>, <code>atan()</code></li>
+<li><code>radians()</code>: Converteix graus a radians</li>
+<li><code>degrees()</code>: Converteix radians a graus</li>
+</ul>
+<h3 id="vectors">Vectors </h3>
+<ul>
+<li><code>normalize()</code>: Normalitza un vector</li>
+<li><code>length()</code>: Retorna la longitud d'un vector</li>
+<li><code>distance()</code>: Distància entre dos punts</li>
+<li><code>dot()</code>: Producte escalar</li>
+<li><code>cross()</code>: Producte vectorial</li>
+<li><code>reflect()</code>: Reflexió d'un vector</li>
+</ul>
+<h3 id="geometria">Geometria </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token comment">// Comprova si un punt està dins d'un cercle</span>
+<span class="token keyword keyword-bool">bool</span> <span class="token function">inside</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span> st<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span> center<span class="token punctuation">,</span> <span class="token keyword keyword-float">float</span> radius<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token function">distance</span><span class="token punctuation">(</span>st<span class="token punctuation">,</span> center<span class="token punctuation">)</span> <span class="token operator">&lt;=</span> radius<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><p>Exemple d'ús:</p>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-vec2">vec2</span> center <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> radius <span class="token operator">=</span> <span class="token number">0.3</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span><span class="token function">inside</span><span class="token punctuation">(</span>vtexCoord<span class="token punctuation">,</span> center<span class="token punctuation">,</span> radius<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        fragColor <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// Dins del cercle</span>
+    <span class="token punctuation">}</span> <span class="token keyword keyword-else">else</span> <span class="token punctuation">{</span>
+        fragColor <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// Fora del cercle</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="interpolació">Interpolació </h3>
+<ul>
+<li><code>mix()</code>: Interpolació lineal entre dos valors</li>
+<li><code>smoothstep()</code>: Interpolació suau entre dos valors</li>
+<li><code>clamp()</code>: Limita un valor entre un mínim i màxim</li>
+</ul>
+<h2 id="4-patrons-comuns-de-solució">4. Patrons Comuns de Solució </h2>
+<h3 id="per-animacions">Per Animacions </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-float">float</span> t <span class="token operator">=</span> time <span class="token operator">*</span> speed<span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec3">vec3</span> newPosition <span class="token operator">=</span> vertex <span class="token operator">+</span> normal <span class="token operator">*</span> amplitude <span class="token operator">*</span> <span class="token function">sin</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    gl_Position <span class="token operator">=</span> modelViewProjectionMatrix <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>newPosition<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="per-textures">Per Textures </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> colorMap<span class="token punctuation">;</span>
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    fragColor <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>colorMap<span class="token punctuation">,</span> vtexCoord<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="5-consideracions-importants">5. Consideracions Importants </h2>
+<h3 id="precisions-dels-tipus">Precisions dels Tipus </h3>
+<ul>
+<li>Utilitzar <code>float</code> per números decimals</li>
+<li>Afegir <code>.0</code> als números enters que s'han de tractar com floats</li>
+</ul>
+<h3 id="transformacions">Transformacions </h3>
+<ul>
+<li>Aplicar transformacions en l'ordre correcte: Model -&gt; View -&gt; Projection</li>
+<li>Utilitzar <code>normalMatrix</code> per transformar normals correctament</li>
+</ul>
+<h3 id="textures">Textures </h3>
+<ul>
+<li>Coordenades de textura entre 0 i 1</li>
+<li>Utilitzar <code>texture()</code> per mostrejar textures</li>
+<li>Tenir en compte els modes de wrapping i filtering</li>
+</ul>
+<h3 id="textura-esfèrica-equirectangular-mapping">Textura Esfèrica (Equirectangular Mapping) </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token comment">// Converteix coordenades cartesianes a coordenades esfèriques (equirectangular mapping)</span>
+<span class="token keyword keyword-vec2">vec2</span> <span class="token function">sphericalTexCoord</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> pos<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Normalitzem la posició per assegurar que estem a la superfície de l'esfera</span>
+    <span class="token keyword keyword-vec3">vec3</span> npos <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Calculem θ (longitude) i ψ (latitude)</span>
+    <span class="token keyword keyword-float">float</span> theta <span class="token operator">=</span> <span class="token function">atan</span><span class="token punctuation">(</span>npos<span class="token punctuation">.</span>z<span class="token punctuation">,</span> npos<span class="token punctuation">.</span>x<span class="token punctuation">)</span><span class="token punctuation">;</span>     <span class="token comment">// θ = atan(z/x)</span>
+    <span class="token keyword keyword-float">float</span> psi <span class="token operator">=</span> <span class="token function">asin</span><span class="token punctuation">(</span>npos<span class="token punctuation">.</span>y<span class="token punctuation">)</span><span class="token punctuation">;</span>               <span class="token comment">// ψ = asin(y)</span>
+    
+    <span class="token comment">// Convertim a coordenades UV (entre 0 i 1)</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span>
+        theta <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">2.0</span> <span class="token operator">*</span> PI<span class="token punctuation">)</span><span class="token punctuation">,</span>     <span class="token comment">// u = θ/(2π)</span>
+        <span class="token punctuation">(</span>psi <span class="token operator">/</span> PI<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">0.5</span>        <span class="token comment">// v = ψ/π + 0.5</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><p>On:</p>
+<ul>
+<li><code>theta (θ)</code>: angle en el pla XZ (longitud), rang [-π, π]</li>
+<li><code>psi (ψ)</code>: angle respecte l'eix Y (latitud), rang [-π/2, π/2]</li>
+<li>Les coordenades UV resultants estan en el rang [0,1]</li>
+<li>Útil per mapejar textures panoràmiques equirectangulars</li>
+</ul>
+<h3 id="optimització">Optimització </h3>
+<ul>
+<li>Minimitzar càlculs en el fragment shader</li>
+<li>Passar càlculs constants al vertex shader quan sigui possible</li>
+<li>Evitar divisions i funcions trigonomètriques innecessàries</li>
+<li>Utilitzar <code>const</code> per valors fixos</li>
+<li>Minimitzar branching en fragment shaders</li>
+</ul>
+<h3 id="debug">Debug </h3>
+<ul>
+<li>Utilitzar colors sòlids per debugar</li>
+<li>Visualitzar normals o coordenades com a colors</li>
+<li>Comprovar valors extrems dels inputs</li>
+</ul>
+<h2 id="6-exemples-de-transformacions">6. Exemples de Transformacions </h2>
+<h3 id="transformació-bàsica">Transformació Bàsica </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Transformació de vèrtexs</span>
+    <span class="token keyword keyword-vec4">vec4</span> position <span class="token operator">=</span> modelViewProjectionMatrix <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>vertex<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Transformació de normals</span>
+    <span class="token keyword keyword-vec3">vec3</span> N <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>normalMatrix <span class="token operator">*</span> normal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Color bàsic</span>
+    frontColor <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>color<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Posició final</span>
+    gl_Position <span class="token operator">=</span> position<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="rotació-2d">Rotació 2D </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec2">vec2</span> <span class="token function">rotate</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span> p<span class="token punctuation">,</span> <span class="token keyword keyword-float">float</span> a<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span>
+        p<span class="token punctuation">.</span>x <span class="token operator">*</span> <span class="token function">cos</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span> <span class="token operator">-</span> p<span class="token punctuation">.</span>y <span class="token operator">*</span> <span class="token function">sin</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        p<span class="token punctuation">.</span>x <span class="token operator">*</span> <span class="token function">sin</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span> <span class="token operator">+</span> p<span class="token punctuation">.</span>y <span class="token operator">*</span> <span class="token function">cos</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="escala">Escala </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec3">vec3</span> <span class="token function">scale</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> p<span class="token punctuation">,</span> <span class="token keyword keyword-vec3">vec3</span> s<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> p <span class="token operator">*</span> s<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="matrius-de-rotació">Matrius de Rotació </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token comment">// Rotació al voltant de l'eix X (columna-major)</span>
+<span class="token keyword keyword-mat4">mat4</span> <span class="token function">rotateX</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> angle<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-mat4">mat4</span><span class="token punctuation">(</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span>     <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>      <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>     <span class="token comment">// Primera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>     <span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// Segona columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>    <span class="token operator">-</span><span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// Tercera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>     <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>      <span class="token number">1</span><span class="token punctuation">)</span>      <span class="token comment">// Quarta columna</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Rotació al voltant de l'eix Y (columna-major)</span>
+<span class="token keyword keyword-mat4">mat4</span> <span class="token function">rotateY</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> angle<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-mat4">mat4</span><span class="token punctuation">(</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token number">0</span><span class="token punctuation">,</span>   <span class="token operator">-</span><span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// Primera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">1</span><span class="token punctuation">,</span>    <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token comment">// Segona columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span>    <span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// Tercera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>    <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">1</span><span class="token punctuation">)</span>   <span class="token comment">// Quarta columna</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Rotació al voltant de l'eix Z (columna-major)</span>
+<span class="token keyword keyword-mat4">mat4</span> <span class="token function">rotateZ</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> angle<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-mat4">mat4</span><span class="token punctuation">(</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span>  <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token comment">// Primera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token function">sin</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">cos</span><span class="token punctuation">(</span>angle<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span>  <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token comment">// Segona columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">1</span><span class="token punctuation">,</span>  <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>  <span class="token comment">// Tercera columna</span>
+        <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>          <span class="token number">0</span><span class="token punctuation">,</span>  <span class="token number">1</span><span class="token punctuation">)</span>   <span class="token comment">// Quarta columna</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="7-efectes-comuns">7. Efectes Comuns </h2>
+<h3 id="fade">Fade </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-float">float</span> fade <span class="token operator">=</span> <span class="token function">clamp</span><span class="token punctuation">(</span>time<span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+fragColor <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>color<span class="token punctuation">,</span> fade<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><h3 id="pulsació">Pulsació </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-float">float</span> pulse <span class="token operator">=</span> <span class="token number">0.5</span> <span class="token operator">+</span> <span class="token number">0.5</span> <span class="token operator">*</span> <span class="token function">sin</span><span class="token punctuation">(</span>time<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><h2 id="8-variables-built-in-importants">8. Variables Built-in Importants </h2>
+<h3 id="vertex-shader-1">Vertex Shader </h3>
+<ul>
+<li><code>gl_Position</code>: Posició final del vèrtex (vec4)</li>
+<li><code>gl_PointSize</code>: Mida del punt quan es dibuixen punts</li>
+<li><code>gl_VertexID</code>: Índex del vèrtex actual</li>
+<li><code>gl_InstanceID</code>: Índex de la instància actual</li>
+</ul>
+<h3 id="fragment-shader-1">Fragment Shader </h3>
+<ul>
+<li><code>gl_FragCoord</code>: Posició del fragment en coordenades de pantalla</li>
+<li><code>gl_FrontFacing</code>: Boolean que indica si el fragment és frontal</li>
+<li><code>gl_PointCoord</code>: Coordenades dins d'un punt (0,0 a 1,1)</li>
+</ul>
+<h2 id="9-operacions-amb-textures-avançades">9. Operacions amb Textures Avançades </h2>
+<h3 id="sampling-amb-offset">Sampling amb Offset </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec4">vec4</span> <span class="token function">sampleOffset</span><span class="token punctuation">(</span><span class="token keyword keyword-sampler2D">sampler2D</span> tex<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span> uv<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span> offset<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token function">texture</span><span class="token punctuation">(</span>tex<span class="token punctuation">,</span> uv <span class="token operator">+</span> offset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="efecte-blur">Efecte Blur </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec4">vec4</span> <span class="token function">blur</span><span class="token punctuation">(</span><span class="token keyword keyword-sampler2D">sampler2D</span> tex<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span> uv<span class="token punctuation">,</span> <span class="token keyword keyword-float">float</span> radius<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-vec4">vec4</span> color <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> total <span class="token operator">=</span> <span class="token number">0.0</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-for">for</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> x <span class="token operator">=</span> <span class="token operator">-</span>radius<span class="token punctuation">;</span> x <span class="token operator">&lt;=</span> radius<span class="token punctuation">;</span> x <span class="token operator">+=</span> <span class="token number">1.0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword keyword-for">for</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> y <span class="token operator">=</span> <span class="token operator">-</span>radius<span class="token punctuation">;</span> y <span class="token operator">&lt;=</span> radius<span class="token punctuation">;</span> y <span class="token operator">+=</span> <span class="token number">1.0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            color <span class="token operator">+=</span> <span class="token function">texture</span><span class="token punctuation">(</span>tex<span class="token punctuation">,</span> uv <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">0.01</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            total <span class="token operator">+=</span> <span class="token number">1.0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword keyword-return">return</span> color <span class="token operator">/</span> total<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="anti-aliasing">Anti-Aliasing </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token comment">// Versió anti-aliased de la funció step</span>
+<span class="token keyword keyword-float">float</span> <span class="token function">aastep</span><span class="token punctuation">(</span><span class="token keyword keyword-float">float</span> threshold<span class="token punctuation">,</span> <span class="token keyword keyword-float">float</span> x<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-float">float</span> width <span class="token operator">=</span> <span class="token number">0.7</span> <span class="token operator">*</span> <span class="token function">length</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token function">dFdx</span><span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">dFdy</span><span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-return">return</span> <span class="token function">smoothstep</span><span class="token punctuation">(</span>threshold<span class="token operator">-</span>width<span class="token punctuation">,</span> threshold<span class="token operator">+</span>width<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><p>Exemple d'ús per dibuixar un cercle amb vores suaus:</p>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec2">vec2</span> centre <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-float">float</span> d <span class="token operator">=</span> <span class="token function">length</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span>vtexCoord<span class="token punctuation">.</span>x<span class="token operator">-</span>centre<span class="token punctuation">.</span>x<span class="token punctuation">,</span> vtexCoord<span class="token punctuation">.</span>y<span class="token operator">-</span>centre<span class="token punctuation">.</span>y<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    fragColor <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token function">step</span><span class="token punctuation">(</span><span class="token number">0.2</span><span class="token punctuation">,</span> d<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// Versió anti-aliased:</span>
+    <span class="token comment">// fragColor = vec4(1.0, vec2(aastep(0.2, d)), 1.0);</span>
+<span class="token punctuation">}</span>
+</code></pre><p>Components clau:</p>
+<ul>
+<li><code>dFdx(x)</code>, <code>dFdy(x)</code>: Derivades parcials per calcular l'amplada del filtre</li>
+<li><code>width</code>: Amplada del filtre anti-aliasing (0.7 és un valor típic)</li>
+<li><code>smoothstep</code>: Interpolació suau entre els valors del llindar</li>
+</ul>
+<h2 id="10-càlculs-dilluminació">10. Càlculs d'Il·luminació </h2>
+<h3 id="components-del-model-de-phong">Components del Model de Phong </h3>
+<h4 id="1-component-ambiental-matambient--lightambient">1. Component Ambiental: <code>matAmbient * lightAmbient</code> </h4>
+<ul>
+<li>Simula la llum indirecta present a l'escena</li>
+<li>No depèn de la posició de l'observador ni de la llum</li>
+</ul>
+<h4 id="2-component-difús-matdiffuse--lightdiffuse--idiff">2. Component Difús: <code>matDiffuse * lightDiffuse * Idiff</code> </h4>
+<ul>
+<li>Segueix la llei de Lambert (<code>Idiff = max(0, N·L)</code>)</li>
+<li>Depèn de l'angle entre la normal i la direcció de la llum</li>
+<li>No depèn de la posició de l'observador</li>
+</ul>
+<h4 id="3-component-especular-matspecular--lightspecular--ispec">3. Component Especular: <code>matSpecular * lightSpecular * Ispec</code> </h4>
+<ul>
+<li>Simula el reflex brillant en superfícies lluents</li>
+<li>Depèn de l'angle entre el vector de reflexió i la direcció de visió</li>
+<li>Utilitza l'exponent de shininess per controlar la mida del reflex</li>
+</ul>
+<h4 id="vectors-clau">Vectors Clau </h4>
+<ul>
+<li><strong>N</strong>: Vector normal normalitzat a la superfície</li>
+<li><strong>L</strong>: Vector normalitzat direcció cap a la font de llum</li>
+<li><strong>V</strong>: Vector normalitzat direcció cap a l'observador</li>
+<li><strong>R</strong>: Vector normalitzat de reflexió, calculat com <code>2(N·L)N-L</code></li>
+</ul>
+<h3 id="illuminació-amb-materials-del-viewer-phong">Il·luminació amb Materials del Viewer (Phong) </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec4">vec4</span> <span class="token function">light</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> N<span class="token punctuation">,</span> <span class="token keyword keyword-vec3">vec3</span> V<span class="token punctuation">,</span> <span class="token keyword keyword-vec3">vec3</span> L<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    N <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>N<span class="token punctuation">)</span><span class="token punctuation">;</span> V <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>V<span class="token punctuation">)</span><span class="token punctuation">;</span> L <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>L<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec3">vec3</span> R <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span><span class="token number">2.0</span> <span class="token operator">*</span> <span class="token function">dot</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span>L<span class="token punctuation">)</span> <span class="token operator">*</span> N <span class="token operator">-</span> L<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> NdotL <span class="token operator">=</span> <span class="token function">max</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token function">dot</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span>L<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> RdotV <span class="token operator">=</span> <span class="token function">max</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token function">dot</span><span class="token punctuation">(</span>R<span class="token punctuation">,</span>V<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> Idiff <span class="token operator">=</span> NdotL<span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> Ispec <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>NdotL <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> Ispec <span class="token operator">=</span> <span class="token function">pow</span><span class="token punctuation">(</span>RdotV<span class="token punctuation">,</span> matShininess<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-return">return</span> 
+        matAmbient <span class="token operator">*</span> lightAmbient <span class="token operator">+</span>
+        matDiffuse <span class="token operator">*</span> lightDiffuse <span class="token operator">*</span> Idiff <span class="token operator">+</span>
+        matSpecular <span class="token operator">*</span> lightSpecular <span class="token operator">*</span> Ispec<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="11-funcions-dutilitat-addicionals">11. Funcions d'Utilitat Addicionals </h2>
+<h3 id="transformació-de-coordenades">Transformació de Coordenades </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec3">vec3</span> <span class="token function">worldToObject</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> p<span class="token punctuation">,</span> <span class="token keyword keyword-mat4">mat4</span> modelMatrix<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token punctuation">(</span><span class="token function">inverse</span><span class="token punctuation">(</span>modelMatrix<span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>p<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>xyz<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword keyword-vec3">vec3</span> <span class="token function">objectToWorld</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> p<span class="token punctuation">,</span> <span class="token keyword keyword-mat4">mat4</span> modelMatrix<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token punctuation">(</span>modelMatrix <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>p<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>xyz<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="generadors-de-soroll">Generadors de Soroll </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-float">float</span> <span class="token function">random</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span> st<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token function">fract</span><span class="token punctuation">(</span><span class="token function">sin</span><span class="token punctuation">(</span><span class="token function">dot</span><span class="token punctuation">(</span>st<span class="token punctuation">.</span>xy<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">12.9898</span><span class="token punctuation">,</span><span class="token number">78.233</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">43758.5453123</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword keyword-float">float</span> <span class="token function">noise</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span> st<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-vec2">vec2</span> i <span class="token operator">=</span> <span class="token function">floor</span><span class="token punctuation">(</span>st<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec2">vec2</span> f <span class="token operator">=</span> <span class="token function">fract</span><span class="token punctuation">(</span>st<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> a <span class="token operator">=</span> <span class="token function">random</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> b <span class="token operator">=</span> <span class="token function">random</span><span class="token punctuation">(</span>i <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> c <span class="token operator">=</span> <span class="token function">random</span><span class="token punctuation">(</span>i <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> d <span class="token operator">=</span> <span class="token function">random</span><span class="token punctuation">(</span>i <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec2">vec2</span> u <span class="token operator">=</span> f <span class="token operator">*</span> f <span class="token operator">*</span> <span class="token punctuation">(</span><span class="token number">3.0</span> <span class="token operator">-</span> <span class="token number">2.0</span> <span class="token operator">*</span> f<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-return">return</span> <span class="token function">mix</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> u<span class="token punctuation">.</span>x<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>c <span class="token operator">-</span> a<span class="token punctuation">)</span><span class="token operator">*</span> u<span class="token punctuation">.</span>y <span class="token operator">*</span> <span class="token punctuation">(</span><span class="token number">1.0</span> <span class="token operator">-</span> u<span class="token punctuation">.</span>x<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>d <span class="token operator">-</span> b<span class="token punctuation">)</span> <span class="token operator">*</span> u<span class="token punctuation">.</span>x <span class="token operator">*</span> u<span class="token punctuation">.</span>y<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="utils-per-debugging">Utils per Debugging </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-vec4">vec4</span> <span class="token function">visualizeNormal</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span> normal<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token function">normalize</span><span class="token punctuation">(</span>normal<span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">0.5</span> <span class="token operator">+</span> <span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword keyword-vec4">vec4</span> <span class="token function">visualizeUV</span><span class="token punctuation">(</span><span class="token keyword keyword-vec2">vec2</span> uv<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>uv<span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="12-tècniques-de-renderitzat">12. Tècniques de Renderitzat </h2>
+<h3 id="outline-effect">Outline Effect </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token keyword keyword-float">float</span> <span class="token function">getOutline</span><span class="token punctuation">(</span><span class="token keyword keyword-sampler2D">sampler2D</span> depthTex<span class="token punctuation">,</span> <span class="token keyword keyword-vec2">vec2</span> uv<span class="token punctuation">,</span> <span class="token keyword keyword-float">float</span> thickness<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-float">float</span> depth <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>depthTex<span class="token punctuation">,</span> uv<span class="token punctuation">)</span><span class="token punctuation">.</span>r<span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> outline <span class="token operator">=</span> <span class="token number">0.0</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-for">for</span><span class="token punctuation">(</span><span class="token keyword keyword-int">int</span> i <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;=</span> <span class="token number">1</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword keyword-for">for</span><span class="token punctuation">(</span><span class="token keyword keyword-int">int</span> j <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span> j <span class="token operator">&lt;=</span> <span class="token number">1</span><span class="token punctuation">;</span> j<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword keyword-float">float</span> sampleDepth <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>depthTex<span class="token punctuation">,</span> uv <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span>i<span class="token punctuation">,</span>j<span class="token punctuation">)</span> <span class="token operator">*</span> thickness<span class="token punctuation">)</span><span class="token punctuation">.</span>r<span class="token punctuation">;</span>
+            outline <span class="token operator">+=</span> <span class="token function">abs</span><span class="token punctuation">(</span>depth <span class="token operator">-</span> sampleDepth<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword keyword-return">return</span> outline <span class="token operator">&gt;</span> <span class="token number">0.001</span> <span class="token operator">?</span> <span class="token number">1.0</span> <span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="13-tips-per-optimització">13. Tips per Optimització </h2>
+<ul>
+<li>Utilitzar <code>if</code> només quan sigui absolutament necessari</li>
+<li>Precalcular valors constants al CPU</li>
+<li>Utilitzar <code>const</code> per variables que no canvien</li>
+<li>Evitar divisions per zero amb <code>max(denominator, 0.0001)</code></li>
+<li>Utilitzar versions optimitzades de funcions:
+<ul>
+<li><code>pow(x,2.0)</code> → <code>x*x</code></li>
+<li><code>pow(x,3.0)</code> → <code>x*x*x</code></li>
+<li><code>pow(x,4.0)</code> → <code>(x*x)*(x*x)</code></li>
+</ul>
+</li>
+</ul>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>

@@ -161,7 +161,23 @@
 <h2 id="ejemplo-1-dalify">Ejemplo 1-Dalify </h2>
 <h3 id="11-enunciado">1.1-Enunciado </h3>
 <p><img src="image-1.png" alt="alt text"></p>
-<h3 id="12-vertex-shader">1.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu VS<span class="token operator">+</span>FS per deformar el model en direcció <span class="token function">vertical</span> <span class="token punctuation">(</span>eix Y en model space<span class="token punctuation">)</span><span class="token punctuation">,</span> per obtenir 
+una aparença similar a la d’alguns animals en quadres de Salvador Dalí<span class="token operator">:</span> 
+
+El VS deformarà el model modificant únicament la coordenada Y en model space<span class="token operator">:</span> 
+
+Sigui c el resultat d’interpolar linealment boundingBoxMin<span class="token punctuation">.</span>y i boundingBoxMax<span class="token punctuation">.</span>y<span class="token punctuation">,</span> 
+segons un paràmetre d’interpolació t<span class="token punctuation">,</span> <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> t <span class="token operator">=</span> <span class="token number">0.4</span><span class="token punctuation">.</span> 
+
+Si la coordenada Y és inferior a c<span class="token punctuation">,</span> el VS li aplicarà l’escalat donat per <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> 
+scale <span class="token operator">=</span> <span class="token number">4.0</span> per tal d’allargar les potes del model<span class="token punctuation">.</span> Altrament<span class="token punctuation">,</span> no li aplicarà cap escalat<span class="token punctuation">,</span> 
+però sí una translació Δ en Y<span class="token punctuation">.</span> Per calcular Δ<span class="token punctuation">,</span> observeu que per tenir continuïtat
+a y<span class="token operator">=</span>c<span class="token punctuation">,</span> llavors c<span class="token operator">*</span>scale <span class="token operator">=</span> c <span class="token operator">+</span> Δ <span class="token punctuation">(</span>aïlleu Δ<span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+Degut a que no estem recalculant els plans de clipping<span class="token punctuation">,</span> és possible que el model surti retallat<span class="token punctuation">.</span> 
+
+El FS farà les tasques habituals<span class="token punctuation">.</span> 
+</code></pre><h3 id="12-vertex-shader">1.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (from your 3D model) ---</span>
@@ -243,7 +259,42 @@
 <h2 id="ejemplo-2-dolphin">Ejemplo 2-Dolphin </h2>
 <h3 id="21-enunciado">2.1-Enunciado </h3>
 <p><img src="image-2.png" alt="alt text"></p>
-<h3 id="22-vertex-shader">2.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Volem simular l’animació d’un dofí nadant. Per aconseguir-ho cal que el VS deformi el model tenint en
+compte les següents indicacions. L’animació durarà un segon i s’anirà repetint en el temps (caldrà fer servir
+una funció sinusoïdal amb un període apropiat). Per tal d’aplicar les transformacions corresponents
+dividirem el dofí en dues meitats i aplicarem una rotació a cada meitat en funció del temps.
+
+Model: Per al model dolphin.obj amb els següents punts (tingueu en compte que els valors de cada punt
+de la figura són en relació a la llargària de la caixa contenidora en direcció Y): 
+
+Punts de rotació: La rotació de cada meitat serà al voltant d’un eix paral·lel a l’eix X i que passa per un
+punt de la forma (0,y,0), on la y varia segons la meitat. Per la meitat davantera, el punt de rotació serà RD,
+i per la meitat posterior el punt de rotació serà RT. 
+
+Transició de la deformació: La transformació s’aplicarà de manera suau (combinant amb smoothstep els
+vèrtexs originals i els transformats) en l’eix Y des del punt TD1 (on no hi haurà cap transformació) fins al
+punt TD2 (on la transformació serà màxima) per la part davantera, i des de TT1 fins a TT2 per la part
+posterior. 
+
+Angles de la rotació: L’angle de rotació per la part davantera variarà en [-PI/32, PI/32], i per la part
+posterior en [-PI/4, 0]. Tingueu en compte que les rotacions seran en sentits oposats, fent que el cap i la cua
+pugin i baixin a l’hora amb un petit offset de temps. 
+
+Offset entre parts: L’animació de la part davantera començarà 0.25 segons abans que la de la part
+posterior. És a dir, si usem time = 0 en l’animació de la part posterior, la part davantera es comportarà com
+si time = 0.25. 
+
+El color del dofí serà el gris clar (0.8, 0.8, 0.8), al qual el VS aplicarà il·luminació bàsica tenint en compte
+la component Z de la normal en eye space. 
+
+El FS farà els càlculs imprescindibles per a la visualització. Aquí tens els resultats esperats amb el model
+dolphin.obj per a diferents instants de temps (t=0s, 1.25s, 2.75s):
+
+Identificadors (ús obligatori):
+dolphin.vert, dolphin.frag
+uniform float time;
+const float PI = 3.1416; 
+</code></pre><h3 id="22-vertex-shader">2.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> vertex<span class="token punctuation">;</span>
@@ -355,7 +406,26 @@
 <h2 id="ejemplo-3-spring">Ejemplo 3-Spring </h2>
 <h3 id="31-enunciado">3.1-Enunciado </h3>
 <p><img src="image-7.png" alt="alt text"></p>
-<h3 id="32-vertex-shader">3.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriviu VS<span class="token operator">+</span>FS que simulin l'expansió i compressió cícliques del model <span class="token number">3</span>D com si fos 
+una <span class="token function">molla</span> <span class="token punctuation">(</span>vegeu el vídeo spring<span class="token punctuation">.</span>mp4 al zip de l'enunciat<span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+El VS s<span class="token char">'encarregarà de l'</span>animació<span class="token punctuation">,</span> que tindrà dues fases que es repetiran cada <span class="token number">3.5</span> segons<span class="token punctuation">.</span>
+
+La primera <span class="token function">fase</span> <span class="token punctuation">(</span>expansió<span class="token punctuation">)</span> tindrà una durada de <span class="token number">0.5</span> segons i mourà els vèrtexs des de l'origen de coordenades 
+fins a la seva posició original en model space<span class="token punctuation">.</span> Per a calcular la interpolació linial entre aquestes dues 
+posicions<span class="token punctuation">,</span> feu que el paràmetre d'interpolació linial <span class="token function">sigui</span> <span class="token punctuation">(</span>t<span class="token operator">/</span><span class="token number">0.5</span><span class="token punctuation">)</span>³<span class="token punctuation">,</span> on t és el temps en segons
+des de l'inici del <span class="token function">periode</span> <span class="token punctuation">(</span>per exemple<span class="token punctuation">,</span> quan time <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">,</span> t <span class="token operator">=</span> <span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+La segona <span class="token function">fase</span> <span class="token punctuation">(</span>compressió<span class="token punctuation">)</span> tindrà una durada de <span class="token number">3</span> segons<span class="token punctuation">,</span> i mourà els vèrtexs des de la seva posició inicial 
+en model space cap a l'origen<span class="token punctuation">.</span> Ara però volem que els vèrtexs es moguin a velocitat uniforme<span class="token punctuation">.</span> Penseu com heu 
+de calcular el paràmetre d<span class="token char">'interpolació lineal, a partir d'</span>un valor t que dins de cada període 
+estarà dins l'interval <span class="token punctuation">[</span><span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">3.5</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+Un cop calculada la posició del vèrtex en model space<span class="token punctuation">,</span> caldrà transformar<span class="token operator">-</span>lo a clip space com feu usualment<span class="token punctuation">.</span> 
+El color del vèrtex serà el gris que té per components la Z de la normal en eye space<span class="token punctuation">.</span>
+
+El FS farà les tasques per defecte<span class="token punctuation">.</span>
+</code></pre><h3 id="32-vertex-shader">3.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (del modelo 3D) ---</span>
@@ -459,7 +529,32 @@
 <h2 id="ejemplo-1-hunter">Ejemplo 1-Hunter </h2>
 <h3 id="11-enunciado-1">1.1-Enunciado </h3>
 <p><img src="image-3.png" alt="alt text"></p>
-<h3 id="12-vertex-shader-1">1.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Volem simular uns binocles que ens acosten els detalls d'una textura que ocupa tot el 
+viewport<span class="token punctuation">,</span> com en aquestes imatges<span class="token operator">:</span>
+
+Aquest exercici sols funciona amb l'objecte plane<span class="token punctuation">.</span>obj<span class="token punctuation">,</span> texturat amb l<span class="token char">'escena triada. Per resoldre'</span>l<span class="token punctuation">,</span> has d'implementar<span class="token operator">:</span>
+
+<span class="token number">1.U</span>n VS que sols emet les coordenades de textura de cada vèrtex<span class="token punctuation">,</span> i les coordenades de cada vèrtex del model<span class="token punctuation">,</span> com si ja 
+estiguessin en coordenades de <span class="token function">clipping</span> <span class="token punctuation">(</span>val a dir que has de fer servir la identitat com a ModelViewProjectionMatrix<span class="token punctuation">.</span>
+
+Us proporcionem un arxiu blur<span class="token punctuation">.</span>glsl que conté una funció que heu de fer servir al vostre FS<span class="token punctuation">.</span> Aquesta funció mostreja 
+una <span class="token function">textura</span> <span class="token punctuation">(</span>s'hi accedeix amb el <span class="token keyword keyword-sampler2D">sampler2D</span> jungla<span class="token punctuation">)</span><span class="token punctuation">,</span> en les coordenades que rep com paràmetre<span class="token punctuation">,</span> però la desenfoca<span class="token punctuation">.</span> 
+Coloregeu els fragments amb el resultat retornat per aquesta funció<span class="token punctuation">,</span> obtenint un viewport 
+omplert per la textura triada<span class="token punctuation">,</span> però desenfocada<span class="token punctuation">.</span>
+
+Afegirem ara els binocles<span class="token punctuation">.</span> Per posicionar<span class="token operator">-</span>los<span class="token punctuation">,</span> farem servir el <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-vec2">vec2</span> mousePositon<span class="token punctuation">,</span> que ens dona les coordenades 
+del ratolí en aquell moment<span class="token punctuation">,</span> en píxels<span class="token punctuation">,</span> amb l'origen de coordenades a la cantonada inferior esquerra del viewport<span class="token punctuation">.</span> 
+També disposem del <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-vec2">vec2</span> viewport que ens retorna l'amplada i alçada del viewport en píxels<span class="token punctuation">.</span> Per una posició 
+donada del ratolí<span class="token punctuation">,</span> la part transparent dels binocles consisteix de dos cercles superposats de radi <span class="token number">100</span> píxels<span class="token punctuation">,</span> centrats en 
+dos punts <span class="token number">80</span> píxels a esquerra i dreta del ratolí<span class="token punctuation">.</span> La vorera negra dels binocles son la part que cau fora d'aquesta porció 
+transparent<span class="token punctuation">,</span> de dos circumferències de gruix <span class="token number">5</span> píxels<span class="token punctuation">.</span> Afegeix codi al teu shader que dibuixi la vorera<span class="token punctuation">,</span> i que estigui 
+preparat per acolorir els píxels de la porció transparent de forma diferent a la resta<span class="token punctuation">.</span> <span class="token punctuation">(</span>pista<span class="token operator">:</span> fixeu<span class="token operator">-</span>vos que podeu 
+fer servir les coordenades de textura com a coordenades<span class="token punctuation">,</span> i podeu convertir a píxels usant viewport<span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+Ja sols queda simular l'òptica dels binocles<span class="token punctuation">.</span> El <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> magnific indicarà el factor d'augment que volem que tinguin<span class="token punctuation">.</span> 
+Així<span class="token punctuation">,</span> donarem a cada fragment F dins dels binocles el color de la textura en un punt P que es troba entre F i el ratolí<span class="token punctuation">,</span> 
+i tal que la <span class="token function">dist</span><span class="token punctuation">(</span>F<span class="token punctuation">,</span>ratolí<span class="token punctuation">)</span> és igual a magnific<span class="token operator">*</span><span class="token function">dist</span><span class="token punctuation">(</span>P<span class="token punctuation">,</span> ratolí<span class="token punctuation">)</span><span class="token punctuation">.</span>
+</code></pre><h3 id="12-vertex-shader-1">1.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (del modelo 3D) ---</span>
@@ -582,7 +677,25 @@
 <h2 id="ejemplo-2-invaders">Ejemplo 2-Invaders </h2>
 <h3 id="21-enunciado-1">2.1-Enunciado </h3>
 <p><img src="image-4.png" alt="alt text"></p>
-<h3 id="22-vertex-shader-1">2.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriviu VS<span class="token operator">+</span>FS per tal de dibuixar quelcom similar a una pantalla del conegut Space Invaders<span class="token punctuation">.</span> 
+
+Observeu que la darrera columna de la textura inclou un canó blanc i un escut verd<span class="token punctuation">.</span>
+
+El VS farà les tasques imprescindibles<span class="token punctuation">.</span>
+
+El FS serà l'encarregat de triar el color del fragment<span class="token punctuation">,</span> d'acord amb les coordenades de textura que rebrà del VS<span class="token punctuation">,</span> 
+i que per l'objecte plane estan dins <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>
+
+Per tal d'aconseguir la màxima puntuació<span class="token punctuation">,</span> caldrà que<span class="token operator">:</span>
+
+Hi hagi un canó blanc a la part <span class="token function">inferior</span> <span class="token punctuation">(</span><span class="token number">4</span> punts<span class="token punctuation">)</span>
+
+Hi hagi alguns escuts en una fila per sobre del canó <span class="token punctuation">(</span><span class="token number">3</span> punts<span class="token punctuation">)</span>
+
+Hi hagi com a mínim <span class="token number">6</span> fileres amb els extraterrestres invasors<span class="token punctuation">;</span> cada filera mostrarà un únic tipus d'<span class="token function">extraterrestre</span> <span class="token punctuation">(</span><span class="token number">3</span> punts<span class="token punctuation">)</span><span class="token punctuation">.</span>
+
+
+</code></pre><h3 id="22-vertex-shader-1">2.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (del modelo 3D) ---</span>
@@ -765,7 +878,12 @@
 <h2 id="ejemplo-3-flag">Ejemplo 3-Flag </h2>
 <h3 id="31-enunciado-1">3.1-Enunciado </h3>
 <p><img src="image-8.png" alt="alt text"></p>
-<h3 id="32-vertex-shader-1">3.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu VS<span class="token operator">+</span>FS que<span class="token punctuation">,</span> amb l’objecte plane<span class="token punctuation">.</span>obj<span class="token punctuation">,</span> dibuixi de forma procedural una bandera similar a aquesta<span class="token operator">:</span> 
+
+El VS farà les tasques imprescindibles<span class="token punctuation">,</span> escalant la coordenada Y per tal que la relació d’aspecte sigui <span class="token number">2</span><span class="token operator">:</span><span class="token number">1.</span>
+
+El FS calcularà el color per tal reproduir quelcom semblant a la figura<span class="token punctuation">.</span> 
+</code></pre><h3 id="32-vertex-shader-1">3.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (from your 3D model) ---</span>
@@ -857,6 +975,231 @@
 <span class="token punctuation">}</span>
 </code></pre><hr>
 <hr>
+<h2 id="ejemplo-4-beach">Ejemplo 4-Beach </h2>
+<h3 id="41-enunciado">4.1-Enunciado </h3>
+<p><img src="image-17.png" alt="alt text"></p>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu un VS i un FS per tal de simular una finestra a través de la qual es pot veure una palmera moguda pel vent<span class="token punctuation">,</span> i un fons<span class="token punctuation">.</span>
+
+La composició que volem <span class="token function">obtenir</span> <span class="token punctuation">(</span>amb l’objecte plane<span class="token punctuation">.</span>obj<span class="token punctuation">)</span> la teniu a la dreta<span class="token punctuation">.</span>
+El VS<span class="token punctuation">,</span> a banda de les tasques imprescindibles<span class="token punctuation">,</span> li passarà al FS la normal N
+en eye space<span class="token punctuation">.</span>
+El FS usarà tres textures<span class="token punctuation">,</span> que haureu de declarar així<span class="token operator">:</span>
+ <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> window<span class="token punctuation">;</span> <span class="token comment">// interior</span>
+ <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> palm1<span class="token punctuation">;</span> <span class="token comment">// palm-tree</span>
+ <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> background2<span class="token punctuation">;</span> <span class="token comment">// dunes</span>
+Primer accedirà a la textura <span class="token function">window</span> <span class="token punctuation">(</span>amb les coordenades de textura habituals<span class="token punctuation">)</span>
+per obtenir un color que li direm C<span class="token punctuation">.</span>
+Si la component alfa de C és <span class="token number">1.0</span> <span class="token punctuation">(</span>part opaca de la finestra<span class="token punctuation">)</span><span class="token punctuation">,</span> el color del fragment serà C<span class="token punctuation">.</span>
+Si la component alfa de C és inferior a <span class="token number">1.0</span><span class="token punctuation">,</span> per calcular el color del fragment s’accedirà a la textura palm1
+amb coordenades de textura vtexCoord <span class="token operator">+</span> <span class="token number">0.25</span><span class="token operator">*</span>N<span class="token punctuation">.</span>xy <span class="token operator">+</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.1</span><span class="token operator">*</span><span class="token function">sin</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token operator">*</span>time<span class="token punctuation">)</span><span class="token operator">*</span>vtexCoord<span class="token punctuation">.</span>t<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span> per obtenir
+un color que li direm D<span class="token punctuation">.</span>
+Si la component alfa de D és superior o igual a <span class="token number">0.5</span> <span class="token punctuation">(</span>part opaca de la palmera<span class="token punctuation">)</span><span class="token punctuation">,</span> el color del fragment serà D<span class="token punctuation">.</span>
+Altrament<span class="token punctuation">,</span> el color del fragment serà el color de la textura background2 al punt vtexCoord <span class="token operator">+</span> <span class="token number">0.5</span><span class="token operator">*</span>N<span class="token punctuation">.</span>xy<span class="token punctuation">.</span>
+Observeu que estem usant un offset en les coordenades de textura que depèn de les components de la normal
+en eye space<span class="token punctuation">.</span> Degut a aquest offset<span class="token punctuation">,</span> la part visible de la palmera i del fons dependrà de l’orientació del
+model<span class="token punctuation">.</span> En el cas de la palmera<span class="token punctuation">,</span> també hi ha un desplaçament horitzontal que depèn del temps<span class="token punctuation">,</span> per simular
+l’ondulació produïda pel vent<span class="token punctuation">.</span>
+</code></pre><h3 id="42-vertex-shader">4.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUTS (from your 3D model) ---</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> vertex<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> normal<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> color<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> texCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// --- OUTPUTS (to the Fragment Shader) ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span> <span class="token comment">// Pasa la coordenada de textura</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec3">vec3</span> v_normal_eye<span class="token punctuation">;</span>
+
+<span class="token comment">// --- UNIFORMS (from the viewer) ---</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> modelViewProjectionMatrix<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat3">mat3</span> normalMatrix<span class="token punctuation">;</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment">// Pasa la coordenada de textura</span>
+    vtexCoord <span class="token operator">=</span> texCoord<span class="token punctuation">;</span>
+
+    <span class="token comment">// Pasar la normal en Eye Space al fragment shader</span>
+    v_normal_eye <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>normalMatrix<span class="token operator">*</span>normal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// Calcula la posición final</span>
+    gl_Position <span class="token operator">=</span> modelViewProjectionMatrix <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>vertex<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="43-fragment-shader">4.3-Fragment Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUT (from the Vertex Shader) ---</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> v_normal_eye<span class="token punctuation">;</span>
+
+<span class="token comment">// --- OUTPUT ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec4">vec4</span> fragColor<span class="token punctuation">;</span>
+
+<span class="token comment">// --- UNIFORMS ---</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> time<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> window<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> palm1<span class="token punctuation">;</span> <span class="token comment">// observeu el dígit 1 al final</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-sampler2D">sampler2D</span> background2<span class="token punctuation">;</span> <span class="token comment">// observeu el dígit 2 al final</span>
+
+<span class="token comment">// Definicion colores</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_BLACK  <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword keyword-vec3">vec3</span> N <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>v_normal_eye<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec4">vec4</span> finalColor <span class="token operator">=</span> COLOR_BLACK<span class="token punctuation">;</span>
+
+    <span class="token comment">// textura window (amb les coordenades de textura habituals)</span>
+    <span class="token keyword keyword-vec4">vec4</span> C <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>window<span class="token punctuation">,</span> vtexCoord<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// Si Alpha de C = 1.0, finalColor = C</span>
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>C<span class="token punctuation">.</span>a <span class="token operator">==</span> <span class="token number">1.0</span><span class="token punctuation">)</span> finalColor <span class="token operator">=</span> C<span class="token punctuation">;</span>
+    <span class="token keyword keyword-else">else</span> <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>C<span class="token punctuation">.</span>a <span class="token operator">&lt;</span> <span class="token number">1.0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+        <span class="token keyword keyword-vec2">vec2</span> term2 <span class="token operator">=</span> <span class="token number">0.25</span> <span class="token operator">*</span> N<span class="token punctuation">.</span>xy<span class="token punctuation">;</span>
+        <span class="token keyword keyword-vec2">vec2</span> term3 <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.1</span><span class="token operator">*</span><span class="token function">sin</span><span class="token punctuation">(</span><span class="token number">2.0</span><span class="token operator">*</span>time<span class="token punctuation">)</span><span class="token operator">*</span>vtexCoord<span class="token punctuation">.</span>t<span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword keyword-vec2">vec2</span> palmCoord <span class="token operator">=</span> vtexCoord <span class="token operator">+</span> term2 <span class="token operator">+</span> term3<span class="token punctuation">;</span>
+
+        <span class="token keyword keyword-vec4">vec4</span> D <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>palm1<span class="token punctuation">,</span> palmCoord<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>D<span class="token punctuation">.</span>a <span class="token operator">&gt;=</span> <span class="token number">0.5</span><span class="token punctuation">)</span> finalColor <span class="token operator">=</span> D<span class="token punctuation">;</span>
+        <span class="token keyword keyword-else">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword keyword-vec2">vec2</span> backCoords <span class="token operator">=</span> vtexCoord <span class="token operator">+</span> <span class="token number">0.5</span> <span class="token operator">*</span> N<span class="token punctuation">.</span>xy<span class="token punctuation">;</span>
+            finalColor <span class="token operator">=</span> <span class="token function">texture</span><span class="token punctuation">(</span>background2<span class="token punctuation">,</span> backCoords<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    fragColor <span class="token operator">=</span> finalColor<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h2 id="ejemplo-5-halloween2">Ejemplo 5-Halloween2 </h2>
+<h3 id="31-enunciado-2">3.1-Enunciado </h3>
+<p><img src="image-18.png" alt="alt text"></p>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu VS<span class="token operator">+</span>FS que<span class="token punctuation">,</span> amb l’objecte plane<span class="token punctuation">.</span>obj<span class="token punctuation">,</span> dibuixi de forma procedural una carbassa similar a aquesta<span class="token operator">:</span>
+<span class="token punctuation">[</span>La puntuació dels apartats és orientativa<span class="token punctuation">]</span>
+El VS <span class="token punctuation">[</span><span class="token number">2</span> punts<span class="token punctuation">]</span> farà les tasques imprescindibles<span class="token punctuation">,</span> escalant la coordenada X per tal que la relació d’aspecte
+sigui <span class="token number">4</span><span class="token operator">:</span><span class="token number">3.</span>
+El FS <span class="token punctuation">[</span><span class="token number">8</span> punts<span class="token punctuation">]</span> calcularà el color per tal de reproduir quelcom semblant a la figura<span class="token punctuation">,</span> utilitzant les
+coordenades de textura del fragment<span class="token punctuation">.</span>
+Els elements que heu de reproduir són<span class="token operator">:</span>
+<span class="token number">1.</span> Color de fons <span class="token punctuation">[</span><span class="token number">2</span> punts<span class="token punctuation">]</span><span class="token operator">:</span> un gradient radial de color<span class="token punctuation">,</span> de taronja a negre<span class="token punctuation">.</span>
+<span class="token number">2.</span> La carbassa elíptica i el peduncle rectangular <span class="token punctuation">[</span><span class="token number">2</span> punts<span class="token punctuation">]</span><span class="token punctuation">,</span> de color negre o gris proper al negre<span class="token punctuation">.</span>
+<span class="token number">3.</span> Els ulls <span class="token punctuation">[</span><span class="token number">2</span> punts<span class="token punctuation">]</span><span class="token punctuation">,</span> de color de fons<span class="token punctuation">.</span>
+<span class="token number">4.</span> La boca <span class="token punctuation">[</span><span class="token number">2</span> punts<span class="token punctuation">]</span><span class="token punctuation">,</span> delimitada per dos cercles<span class="token punctuation">,</span> també de color de fons<span class="token punctuation">.</span> 
+
+</code></pre><h3 id="32-vertex-shader-2">3.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUTS (from your 3D model) ---</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> vertex<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> normal<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> color<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> texCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// --- OUTPUTS (to the Fragment Shader) ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// --- UNIFORMS (from the viewer) ---</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> modelViewProjectionMatrix<span class="token punctuation">;</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    vtexCoord <span class="token operator">=</span> texCoord<span class="token punctuation">;</span>
+    
+    <span class="token comment">// Create a new vertex variable</span>
+    <span class="token keyword keyword-vec4">vec4</span> new_vertex <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>vertex<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Scale the X coordinate by 4/3 to make the</span>
+    <span class="token comment">// 1x1 plane into a (4:3 aspect ratio) rectangle</span>
+    new_vertex<span class="token punctuation">.</span>x <span class="token operator">=</span> new_vertex<span class="token punctuation">.</span>x <span class="token operator">*</span> <span class="token keyword keyword-float">float</span><span class="token punctuation">(</span><span class="token number">4.0</span><span class="token operator">/</span><span class="token number">3.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// Calculate the final position using the MODIFIED vertex</span>
+    gl_Position <span class="token operator">=</span> modelViewProjectionMatrix <span class="token operator">*</span> new_vertex<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="33-fragment-shader-2">3.3-Fragment Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUT (del Vertex Shader) ---</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// --- OUTPUT ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec4">vec4</span> fragColor<span class="token punctuation">;</span>
+
+<span class="token comment">// --- CONSTANTS (Definimos los colores y formas) ---</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_BLACK   <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_GRAY   <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.25</span><span class="token punctuation">,</span> <span class="token number">0.25</span><span class="token punctuation">,</span> <span class="token number">0.25</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_ORANGE <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">0.75</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// --- Constantes del Círculo Azul ---</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-float">float</span> BLUE_CIRCLE_RADIUS <span class="token operator">=</span> <span class="token number">0.12</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec2">vec2</span>  BLUE_CENTER_TEX <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// Centro de la pantalla</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>    
+
+    <span class="token comment">// 0. Preparar variables</span>
+    <span class="token keyword keyword-vec2">vec2</span> center <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-vec2">vec2</span> coord<span class="token punctuation">;</span> 
+    coord<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token punctuation">(</span>vtexCoord<span class="token punctuation">.</span>s <span class="token operator">-</span> center<span class="token punctuation">.</span>s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    coord<span class="token punctuation">.</span>y <span class="token operator">=</span> vtexCoord<span class="token punctuation">.</span>t <span class="token operator">-</span> center<span class="token punctuation">.</span>t<span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> dist <span class="token operator">=</span> <span class="token function">length</span><span class="token punctuation">(</span>coord<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// coord va de -0,5 a 0,5, siendo 0.0 el mínimo</span>
+
+    <span class="token comment">// 1. Empezar con el fondo negro</span>
+    <span class="token keyword keyword-vec4">vec4</span> finalColor <span class="token operator">=</span> COLOR_BLACK<span class="token punctuation">;</span>
+
+    <span class="token comment">// 2. Hacer difuminado circulo naranja</span>
+    <span class="token keyword keyword-float">float</span> radius <span class="token operator">=</span> <span class="token number">0.5</span><span class="token punctuation">;</span> <span class="token comment">// Radio del fundido</span>
+    <span class="token keyword keyword-float">float</span> t <span class="token operator">=</span> <span class="token function">clamp</span><span class="token punctuation">(</span>dist <span class="token operator">/</span> radius<span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    finalColor <span class="token operator">=</span> <span class="token function">mix</span><span class="token punctuation">(</span>COLOR_ORANGE<span class="token punctuation">,</span> COLOR_BLACK<span class="token punctuation">,</span> t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 3. Círculo cara</span>
+    <span class="token keyword keyword-float">float</span> faceRadius <span class="token operator">=</span> <span class="token number">0.3</span><span class="token punctuation">;</span>         <span class="token comment">// Radio del círculo</span>
+    <span class="token keyword keyword-bool">bool</span> faceCircle <span class="token operator">=</span> dist <span class="token operator">&lt;</span> faceRadius<span class="token punctuation">;</span>
+
+    <span class="token comment">// 4. Hat</span>
+    <span class="token keyword keyword-float">float</span> min_X <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">0.025</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> min_Y <span class="token operator">=</span> <span class="token number">0.3</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> max_X <span class="token operator">=</span> <span class="token number">0.025</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> max_Y <span class="token operator">=</span> <span class="token number">0.4</span><span class="token punctuation">;</span>
+
+    <span class="token keyword keyword-bool">bool</span> hat <span class="token operator">=</span>  coord<span class="token punctuation">.</span>s <span class="token operator">&gt;</span> min_X <span class="token operator">&amp;&amp;</span> coord<span class="token punctuation">.</span>s <span class="token operator">&lt;</span> max_X <span class="token operator">&amp;&amp;</span>
+                coord<span class="token punctuation">.</span>t <span class="token operator">&gt;</span> min_Y <span class="token operator">&amp;&amp;</span> coord<span class="token punctuation">.</span>t <span class="token operator">&lt;</span> max_Y<span class="token punctuation">;</span>
+
+    <span class="token comment">// 5. Ojos</span>
+    <span class="token keyword keyword-vec2">vec2</span> left_eye_center <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">0.1</span><span class="token punctuation">,</span> <span class="token number">0.12</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> eye_radius <span class="token operator">=</span> <span class="token number">0.075</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> distance_left <span class="token operator">=</span> <span class="token function">distance</span><span class="token punctuation">(</span>coord<span class="token punctuation">,</span> left_eye_center<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-bool">bool</span> leftEye <span class="token operator">=</span> distance_left <span class="token operator">&lt;</span> eye_radius<span class="token punctuation">;</span>
+
+    <span class="token keyword keyword-vec2">vec2</span> right_eye_center <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.1</span><span class="token punctuation">,</span> <span class="token number">0.12</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> distance_right <span class="token operator">=</span> <span class="token function">distance</span><span class="token punctuation">(</span>coord<span class="token punctuation">,</span> right_eye_center<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-bool">bool</span> rightEye <span class="token operator">=</span> distance_right <span class="token operator">&lt;</span> eye_radius<span class="token punctuation">;</span>
+
+    <span class="token comment">// 6. Mouth</span>
+    <span class="token keyword keyword-vec2">vec2</span> centerM <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> outer_radiusM <span class="token operator">=</span> <span class="token number">0.2</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> distM <span class="token operator">=</span> <span class="token function">distance</span><span class="token punctuation">(</span>coord<span class="token punctuation">,</span> centerM<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword keyword-vec2">vec2</span> centerM2 <span class="token operator">=</span> <span class="token keyword keyword-vec2">vec2</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.05</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> outer_radiusM2 <span class="token operator">=</span> <span class="token number">0.25</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-float">float</span> distM2 <span class="token operator">=</span> <span class="token function">distance</span><span class="token punctuation">(</span>coord<span class="token punctuation">,</span> centerM2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword keyword-bool">bool</span> semiCircle1 <span class="token operator">=</span> distM <span class="token operator">&lt;</span> outer_radiusM <span class="token operator">&amp;&amp;</span> coord<span class="token punctuation">.</span>y <span class="token operator">&lt;</span> <span class="token number">0.0</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-bool">bool</span> semiCircle2 <span class="token operator">=</span> distM2 <span class="token operator">&lt;</span> outer_radiusM <span class="token operator">&amp;&amp;</span> coord<span class="token punctuation">.</span>y <span class="token operator">&lt;</span> <span class="token number">0.0</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-bool">bool</span> mouth <span class="token operator">=</span> semiCircle1 <span class="token operator">&amp;&amp;</span>  <span class="token operator">!</span>semiCircle2<span class="token punctuation">;</span>
+
+    <span class="token comment">// 7. pintar</span>
+    <span class="token keyword keyword-bool">bool</span> isBody <span class="token operator">=</span> faceCircle <span class="token operator">||</span> hat<span class="token punctuation">;</span>
+    <span class="token keyword keyword-bool">bool</span> isHole <span class="token operator">=</span> leftEye <span class="token operator">||</span> rightEye <span class="token operator">||</span> mouth<span class="token punctuation">;</span>
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>isBody <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>isHole<span class="token punctuation">)</span> finalColor <span class="token operator">=</span> COLOR_GRAY<span class="token punctuation">;</span>
+
+    fragColor <span class="token operator">=</span> finalColor<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><hr>
+<hr>
 <hr>
 <h1 id="ejercicio-tipo-3-iluminación-phong">Ejercicio Tipo 3-Iluminación (Phong) </h1>
 <ul>
@@ -877,7 +1220,20 @@
 <h2 id="ejemplo-1-8lights">Ejemplo 1-8lights </h2>
 <h3 id="11-enunciado-2">1.1-Enunciado </h3>
 <p><img src="image-5.png" alt="alt text"></p>
-<h3 id="12-vertex-shader-2">1.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu VS<span class="token operator">+</span>FS per aplicar ilꞏluminació de Phong per fragment<span class="token punctuation">,</span> amb <span class="token number">8</span> llums fixos respecte l’escena<span class="token punctuation">.</span>
+Concretament<span class="token punctuation">,</span> les posicions dels llums en world space coincidiran amb els <span class="token number">8</span> vèrtexs de la capsa
+contenidora de l’<span class="token function">escena</span> <span class="token punctuation">(</span>useu boundingBoxMin i boundingBoxMax per obtenir la posició d’aquests
+llums<span class="token punctuation">)</span><span class="token punctuation">.</span>
+El VS farà les tasques habituals i passarà al FS les dades necessà<span class="token function">ries</span> <span class="token punctuation">(</span>vèrtex i normal<span class="token punctuation">)</span> pel càlcul
+d’ilꞏluminació<span class="token punctuation">.</span>
+El FS calcularà el color del fragment acumulant la contribució dels <span class="token number">8</span> llums<span class="token punctuation">.</span> Per evitar imatges massa
+saturades<span class="token punctuation">,</span> useu per cada llum l’expressió
+∑ Kd <span class="token function">Id</span> <span class="token punctuation">(</span>NꞏLi<span class="token punctuation">)</span><span class="token operator">/</span>𝟐 <span class="token operator">+</span> Ks <span class="token function">Is</span> <span class="token punctuation">(</span>RiꞏV<span class="token punctuation">)</span>s
+la qual ignora la contribució ambient i divideix la contribució difosa per 𝟐<span class="token punctuation">.</span>
+Pels llums i material usa les propietats <span class="token function">habituals</span> <span class="token punctuation">(</span>matDiffuse<span class="token punctuation">,</span> matSpecular<span class="token punctuation">,</span> lightDiffuse<span class="token punctuation">,</span> lightSpecular<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+Vigila amb l’eficiència<span class="token punctuation">,</span> per exemple<span class="token punctuation">,</span> mira de no fer crides innecessàries a <span class="token function">normalize</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span> 
+
+</code></pre><h3 id="12-vertex-shader-2">1.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (from your 3D model) ---</span>
@@ -1002,7 +1358,30 @@
 <h2 id="ejemplo-2-nlights">Ejemplo 2-Nlights </h2>
 <h3 id="21-enunciado-2">2.1-Enunciado </h3>
 <p><img src="image-6.png" alt="alt text"></p>
-<h3 id="22-vertex-shader-2">2.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriviu VS<span class="token operator">+</span>FS per aplicar il·luminació de Phong per fragment<span class="token punctuation">,</span> amb n llums fixos respecte la càmera<span class="token punctuation">,</span> on n 
+és un <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-int">int</span> n<span class="token operator">=</span><span class="token number">4.</span> Aquí tens l'esfera amb n<span class="token operator">=</span><span class="token number">1</span><span class="token operator">-</span><span class="token number">5</span> llums<span class="token operator">:</span>
+
+Aquí la teniu<span class="token operator">:</span>
+
+<span class="token function">Nlights</span> <span class="token punctuation">(</span>nlights<span class="token punctuation">.</span><span class="token operator">*</span><span class="token punctuation">)</span>
+
+Escriviu VS<span class="token operator">+</span>FS per aplicar il·luminació de Phong per fragment<span class="token punctuation">,</span> amb n llums fixos respecte la càmera<span class="token punctuation">,</span> 
+on n és un <span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-int">int</span> n<span class="token operator">=</span><span class="token number">4.</span> Aquí tens l'esfera amb n<span class="token operator">=</span><span class="token number">1</span><span class="token operator">-</span><span class="token number">5</span> llums<span class="token operator">:</span>
+
+<span class="token punctuation">[</span>Imatges de <span class="token number">5</span> esferes il·luminades progressivament per més llums<span class="token punctuation">]</span>
+
+Els llums estaran situats al voltant d'un cercle de radi <span class="token number">10</span> situat al pla Z<span class="token operator">=</span><span class="token number">0</span> de la càmera i centrat a la càmera<span class="token punctuation">.</span> 
+El primer llum estarà situat al punt de coordenades eye <span class="token function">space</span> <span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> i la resta estaran equidistribuïts 
+seguint el cercle<span class="token punctuation">,</span> com es mostra a la figura per n<span class="token operator">=</span><span class="token number">1</span><span class="token operator">-</span><span class="token number">3</span> llums<span class="token operator">:</span>
+
+El VS farà les tasques habituals i passarà al FS les dades necessà<span class="token function">ries</span> <span class="token punctuation">(</span>vèrtex i normal<span class="token punctuation">)</span> pel càlcul d'il·luminació<span class="token punctuation">.</span>
+El FS calcularà el color del fragment acumulant la contribució dels n llums<span class="token punctuation">.</span> Per evitar imatges massa saturades<span class="token punctuation">,</span> useu  l'expressió <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+Aquí teniu la copa amb n<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span> llums<span class="token operator">:</span><span class="token punctuation">[</span>Imatges d'una copa renderitzada amb <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span> i <span class="token number">5</span> llums<span class="token punctuation">]</span>Vigila amb l'eficiència<span class="token punctuation">,</span> 
+per exemple<span class="token punctuation">,</span> mira de no fer crides innecessàries a <span class="token function">normalize</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+Identificadors obligatoris<span class="token operator">:</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-int">int</span> n <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-float">float</span> pi <span class="token operator">=</span> <span class="token number">3.141592</span><span class="token punctuation">;</span>
+</code></pre><h3 id="22-vertex-shader-2">2.2-Vertex Shader </h3>
 <pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
 
 <span class="token comment">// --- INPUTS (from your 3D model) ---</span>
@@ -1115,16 +1494,111 @@
     fragColor <span class="token operator">=</span> finalColor<span class="token punctuation">;</span>
 <span class="token punctuation">}</span>
 </code></pre><hr>
-<h2 id="ejemplo-3-">Ejemplo 3- </h2>
-<h3 id="31-enunciado-2">3.1-Enunciado </h3>
-<h3 id="32-vertex-shader-2">3.2-Vertex Shader </h3>
-<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code></code></pre><h3 id="33-fragment-shader-2">3.3-Fragment Shader </h3>
-<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code></code></pre><hr>
-<h2 id="ejemplo-3--1">Ejemplo 3- </h2>
+<h2 id="ejemplo-3-boundary">Ejemplo 3-Boundary </h2>
 <h3 id="31-enunciado-3">3.1-Enunciado </h3>
-<h3 id="32-vertex-shader-3">3.2-Vertex Shader </h3>
-<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code></code></pre><h3 id="33-fragment-shader-3">3.3-Fragment Shader </h3>
-<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code></code></pre><hr>
+<p><img src="image-19.png" alt="alt text"></p>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code>Escriu un VS<span class="token operator">+</span>FS per obtenir una il·luminació que resalti les “vores” de l’objecte<span class="token operator">:</span>
+El VS haurà de fer les tasques imprescindibles<span class="token punctuation">,</span> enviant al FS la posició P i la normal unitària N del vèrtex<span class="token punctuation">,</span>
+tots dos en eye space<span class="token punctuation">.</span>
+El FS calcularà el color a partir de dos uniforms<span class="token punctuation">,</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge0 <span class="token operator">=</span> <span class="token number">0.35</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge1 <span class="token operator">=</span> <span class="token number">0.4</span><span class="token punctuation">;</span>
+Primer<span class="token punctuation">,</span> caldrà calcular un vector unitari <span class="token function">V</span> <span class="token punctuation">(</span>view vector<span class="token punctuation">)</span> en la direcció del segment que uneix la càmera
+amb el punt P que estem tractant<span class="token punctuation">.</span> A partir d’aquí<span class="token punctuation">,</span> <span class="token function">calculeu</span> <span class="token punctuation">(</span>usant el producte escalar<span class="token punctuation">)</span> el cosinus de l’angle
+que formen els vectors N i –V<span class="token punctuation">.</span> Sigui c aquest <span class="token function">cosinus</span> <span class="token punctuation">(</span>feu tots els càlculs anteriors en eye space<span class="token punctuation">)</span><span class="token punctuation">.</span>
+Observeu que<span class="token punctuation">,</span> pels punts prop de la vora de l’objecte<span class="token punctuation">,</span> els vectors N i –V formaran un angle proper als <span class="token number">90</span>
+graus<span class="token punctuation">,</span> amb un cosinus proper a <span class="token number">0.</span> Per tant<span class="token punctuation">,</span> el valor de c és una mesura de “distància“ a la vora de l’objecte<span class="token punctuation">.</span>
+El color del <span class="token function">fragment</span> <span class="token punctuation">(</span>blanc<span class="token punctuation">,</span> gris<span class="token punctuation">,</span> negre<span class="token punctuation">)</span> dependrà de c<span class="token operator">:</span>
+ Si c <span class="token operator">&lt;</span> <span class="token function">edge0</span> <span class="token punctuation">(</span>P és a prop de la vora de l’objecte<span class="token punctuation">)</span><span class="token punctuation">,</span> el color serà negre<span class="token punctuation">.</span>
+ Si c <span class="token operator">&gt;</span> <span class="token function">edge1</span> <span class="token punctuation">(</span>P és lluny de la vora de l’objecte<span class="token punctuation">)</span><span class="token punctuation">,</span> el color serà blanc<span class="token punctuation">.</span>
+ Per valors de c entre edge0 i edge1<span class="token punctuation">,</span> useu la funció smoothstep per obtenir una transició suau entre
+negre i blanc<span class="token punctuation">.</span>
+<span class="token function">Identificadors</span> <span class="token punctuation">(</span>ús obligatori<span class="token punctuation">)</span><span class="token operator">:</span>
+boundary<span class="token punctuation">.</span>vert<span class="token punctuation">,</span> boundary<span class="token punctuation">.</span><span class="token function">frag</span> <span class="token punctuation">(</span>minúscules<span class="token operator">!</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge0 <span class="token operator">=</span> <span class="token number">0.35</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge1 <span class="token operator">=</span> <span class="token number">0.4</span><span class="token punctuation">;</span>
+
+</code></pre><h3 id="32-vertex-shader-3">3.2-Vertex Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUTS (from your 3D model) ---</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> vertex<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> normal<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> color<span class="token punctuation">;</span>
+<span class="token keyword keyword-layout">layout</span> <span class="token punctuation">(</span>location <span class="token operator">=</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> texCoord<span class="token punctuation">;</span>
+
+<span class="token comment">// --- OUTPUTS (to the Fragment Shader) ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec3">vec3</span> v_normal_eye<span class="token punctuation">;</span>   
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec3">vec3</span> v_position_eye<span class="token punctuation">;</span> 
+
+<span class="token comment">// --- UNIFORMS (from the viewer) ---</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat3">mat3</span> normalMatrix<span class="token punctuation">;</span>   
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> modelViewMatrix<span class="token punctuation">;</span> 
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-mat4">mat4</span> projectionMatrix<span class="token punctuation">;</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment">// Pass the texture coordinate</span>
+    vtexCoord <span class="token operator">=</span> texCoord<span class="token punctuation">;</span>
+
+    <span class="token comment">// --- "Pass Eye Position" Logic ---</span>
+    <span class="token keyword keyword-vec4">vec4</span> pos_eye_4 <span class="token operator">=</span> modelViewMatrix <span class="token operator">*</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span>vertex<span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    v_position_eye <span class="token operator">=</span> <span class="token keyword keyword-vec3">vec3</span><span class="token punctuation">(</span>pos_eye_4<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// --- "Pass Normal" Logic ---</span>
+    v_normal_eye <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>normalMatrix <span class="token operator">*</span> normal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// --- "Pass Eye Position" Logic (continued) ---</span>
+    gl_Position <span class="token operator">=</span> projectionMatrix <span class="token operator">*</span> pos_eye_4<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="33-fragment-shader-3">3.3-Fragment Shader </h3>
+<pre data-role="codeBlock" data-info="glsl" class="language-glsl glsl"><code><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">version</span> <span class="token expression"><span class="token number">330</span> core</span></span>
+
+<span class="token comment">// --- INPUT (from the Vertex Shader) ---</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec2">vec2</span> vtexCoord<span class="token punctuation">;</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> v_normal_eye<span class="token punctuation">;</span>   <span class="token comment">// Interpolated Normal in Eye Space</span>
+<span class="token keyword keyword-in">in</span> <span class="token keyword keyword-vec3">vec3</span> v_position_eye<span class="token punctuation">;</span> <span class="token comment">// Interpolated Position in Eye Space</span>
+
+<span class="token comment">// --- OUTPUT ---</span>
+<span class="token keyword keyword-out">out</span> <span class="token keyword keyword-vec4">vec4</span> fragColor<span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge0 <span class="token operator">=</span> <span class="token number">0.35</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-uniform">uniform</span> <span class="token keyword keyword-float">float</span> edge1 <span class="token operator">=</span> <span class="token number">0.4</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Definim com a constants colors</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_WHITE  <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-const">const</span> <span class="token keyword keyword-vec4">vec4</span> COLOR_BLACK  <span class="token operator">=</span> <span class="token keyword keyword-vec4">vec4</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">1.0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment">// assignem valor per defecte</span>
+    <span class="token keyword keyword-vec4">vec4</span> finalColor <span class="token operator">=</span> COLOR_BLACK<span class="token punctuation">;</span>
+    
+    <span class="token comment">// normalitza N</span>
+    <span class="token keyword keyword-vec3">vec3</span> N <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span>v_normal_eye<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// vector unitari (normalitzar) V que uneix 2 punts la càmera amb P</span>
+    <span class="token comment">// V = càmera - P (però càmera és 0.0)</span>
+    <span class="token keyword keyword-vec3">vec3</span> V <span class="token operator">=</span> <span class="token function">normalize</span><span class="token punctuation">(</span><span class="token keyword keyword-vec3">vec3</span><span class="token punctuation">(</span><span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span><span class="token punctuation">)</span> <span class="token operator">-</span> v_position_eye<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// calcular el cosinus, el retorna directament el producte escalar.</span>
+    <span class="token keyword keyword-float">float</span> c <span class="token operator">=</span> <span class="token function">dot</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span> V<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>c <span class="token operator">&lt;</span> edge0<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        finalColor <span class="token operator">=</span> COLOR_BLACK<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> 
+    <span class="token keyword keyword-else">else</span> <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>c <span class="token operator">&gt;</span> edge1<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        finalColor <span class="token operator">=</span> COLOR_WHITE<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword keyword-else">else</span> <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>c <span class="token operator">&gt;=</span> edge0 <span class="token operator">&amp;&amp;</span> c <span class="token operator">&lt;=</span> edge1<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword keyword-float">float</span> t <span class="token operator">=</span> <span class="token function">smoothstep</span><span class="token punctuation">(</span>edge0<span class="token punctuation">,</span> edge1<span class="token punctuation">,</span> c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        finalColor <span class="token operator">=</span> <span class="token function">mix</span><span class="token punctuation">(</span>COLOR_BLACK<span class="token punctuation">,</span> COLOR_WHITE<span class="token punctuation">,</span> t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    fragColor <span class="token operator">=</span> finalColor<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre><hr>
 
       </div>
       
