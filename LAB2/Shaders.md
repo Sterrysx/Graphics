@@ -461,7 +461,117 @@ void main()
 ## A-Per Vertex
 
 
-### 1.
+Aquí tens els tres snippets corregits i amb els conceptes clars.
+
+He arreglat l'error greu del punt 2 (et faltava la matriu) i he reescrit el punt 3 perquè sigui realment un enviament en **Eye Space** (vital per a il·luminació), ja que el teu codi original barrejava conceptes.
+
+Copia això a la teva secció **A-Per Vertex**.
+
+---
+
+## A-Per Vertex
+
+### 1. Passar al GS la posició, la normal, el color i la coordenada de textura de cada vèrtex (En Object Space)
+
+**Ús:** Quan tens un **Geometry Shader** després que ha de fer càlculs físics (Lego, extrusions, explosions). El GS rebrà les dades "crues".
+
+```glsl
+#version 330 core
+
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal; 
+layout (location = 2) in vec3 color;
+layout (location = 3) in vec2 texCoord; 
+
+out vec4 vfrontColor; 
+out vec3 vNormal; 
+out vec2 vtexCoord; 
+
+void main()
+{
+    // Passem els atributs tal qual (sense modificar)
+    vfrontColor = vec4(color, 1.0);
+    vNormal = normal;
+    vtexCoord = texCoord;
+
+    // Posició "crua" en Object Space. 
+    // El GS s'encarregarà de multiplicar per la matriu MVP després.
+    gl_Position = vec4(vertex, 1.0); 
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 2. Passar Posició en CLIP SPACE (Obligatori si NO hi ha GS)
+
+**Ús:** Quan **NO tens Geometry Shader**, o quan el GS necessita coordenades de pantalla directament.
+**Important:** Necessites la `modelViewProjectionMatrix`.
+
+```glsl
+#version 330 core
+
+layout (location = 0) in vec3 vertex;
+uniform mat4 modelViewProjectionMatrix; // Imprescindible
+
+void main()
+{
+    // Multipliquem per la matriu per projectar a la pantalla
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0); 
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 3. Passar Dades en EYE SPACE (Preparat per Il·luminació)
+
+**Ús:** Quan el següent pas (sigui GS o FS) ha de calcular **Il·luminació (Phong/Lambert)**. La llum es calcula sempre en Eye Space.
+
+```glsl
+#version 330 core
+layout (location = 0) in vec3 vertex;
+layout (location = 1) in vec3 normal;
+
+out vec3 vPosEye;    // Posició del vèrtex respecte la càmera
+out vec3 vNormalEye; // Normal rotada correctament
+
+uniform mat4 modelViewMatrix;  // Per moure vèrtexs
+uniform mat3 normalMatrix;     // Per rotar normals
+uniform mat4 modelViewProjectionMatrix; // Per la posició final
+
+void main() {
+    // 1. Posició en Eye Space (per vectors L i V)
+    vPosEye = (modelViewMatrix * vec4(vertex, 1.0)).xyz;
+
+    // 2. Normal en Eye Space (per productes escalars)
+    vNormalEye = normalize(normalMatrix * normal);
+
+    // 3. La gl_Position depèn:
+    // - Si hi ha GS: sol ser vec4(vertex, 1.0)
+    // - Si NO hi ha GS: OBLIGATORI MVP * vertex (com aquí sota)
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0); 
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
+### 3. Passar la posició en Eye Space
+
+// Si no hi ha GS s'envia en Eye space
+
+``` glsl
+out vec3 vNormal;     // Surt del VS
+out vec2 vTexCoord;
+
+void main() {
+    // OBLIGATORI: Si no hi ha GS, el VS ha de calcular la posició final en CLIP SPACE
+    gl_Position = modelViewProjectionMatrix * vec4(vertex, 1.0); 
+    
+    vNormal = normal; // Envia dades per interpolar
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
 
 
 ## B-Per Fragment
@@ -534,7 +644,7 @@ Per aquest exemple, donarem el cas on:
         float R = length(boundingBoxMax - boundingBoxMin) / 2.0;
 
         // "0.01 per sota de boundingBoxMin.y"
-        vec3 Center = (C.x, boundingBoxMin.y - 0.01, C.z);
+        vec3 Center = vec3(C.x, boundingBoxMin.y - 0.01, C.z);
         float Longitud = 2*R;
         
         // Rectangle de color Cyan
@@ -576,8 +686,205 @@ Per aquest exemple, donarem el cas on:
 
 <hr style="height: 2px; background-color: blue; border: none;">
 
-### 4. Dibuixar un c
+### 4. Aplicar a cada vèrtex del triangle la translació T
 
+Nota: Per fer la translació no cal estar centrat: ens ho saltem
+
+``` glsl
+    // Suposem que tenim un vector T definit, per exemple:
+    // vec3 T = vec3(0.0, 1.0, 0.0); 
+
+    for(int i = 0; i < 3; i++)
+    {
+        gfrontColor = vfrontColor[i];
+
+        // Obtenir posició original (Object Space)
+        vec3 pos = gl_in[i].gl_Position.xyz;
+
+        // 5. MOURE (Translació T)
+        // Simplement sumem el vector al vèrtex actual
+        pos = pos + T;
+
+        // Projecció final
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 5. Calcular n, on n és el promig de les normals dels 3 vèrtexs del triangle en Object Space
+
+``` glsl
+in vec3 vNormal[]; 
+
+void main ( void() ) {
+    vec3 n = (vNormal[0] + vNormal[1] + vNormal[2]) / 3.0;
+    ...
+}
+```
+
+//EXTRA, si ens demanen el promig normalitzat
+
+``` glsl
+in vec3 vNormal[]; 
+
+void main ( void() ) {
+    //Nota dividir per 3 si fas normalize es redundant matemàticament
+    vec3 n = normalize(vNormal[0] + vNormal[1] + vNormal[2]);
+    ...
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
+### 6. Treure els vèrtexs en Clip Space
+
+Nota: Sempre ens demanaran que treguins els vèrtexs en Clip Space el GS
+
+``` glsl
+    for(int i = 0; i < 3; i++)
+    {
+        gfrontColor = vfrontColor[i];
+        vec3 pos = gl_in[i].gl_Position.xyz;
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 7. Aplicar una translació en Eye Space
+
+**Quan t'ho demanen?**
+Quan la translació depèn de la càmera.
+
+* Exemple: "Mou els vèrtexs 2 unitats **cap a la càmera**".
+* Exemple: "Fes que l'objecte sempre estigui orientat cap a l'observador."
+
+```glsl
+    // Vector T en Eye Space (Ex: moure 1 unitat cap a la dreta de la PANTALLA)
+    vec3 T_eye = vec3(1.0, 0.0, 0.0); 
+
+    for(int i = 0; i < 3; i++) {
+        // 1. OBJECT -> EYE
+        vec4 posEye = modelViewMatrix * gl_in[i].gl_Position; 
+        
+        // 2. APLICAR TRANSLACIÓ (En coordenades de càmera)
+        posEye.xyz = posEye.xyz + T_eye;
+
+        // 3. EYE -> CLIP (Només matriu Projecció, la ModelView ja l'hem usat)
+        gl_Position = projectionMatrix * posEye;
+        
+        EmitVertex();
+    }
+
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 8. Aplicar a cada vèrtex del triangle, una translació T, una rotació R i un escalat S
+
+``` glsl
+    for(int i = 0; i < 3; i++)
+    {
+        gfrontColor = vfrontColor[i];
+        vec3 pos = gl_in[i].gl_Position.xyz;
+
+        // --- ELS 5 PASSOS UNIVERSALS ---
+
+        // 1. CENTRAR (Portar l'objecte al 0,0,0 local)
+        pos = pos - C;
+
+        // 2. ESCALAR (Canviar la mida)
+        pos = pos * S;
+
+        // 3. ROTAR (Aplicar matriu de rotació)
+        pos = R * pos; 
+
+        // 4. DESCENTRAR (Tornar a la posició original)
+        pos = pos + C;
+
+        // 5. MOURE (Aplicar la translació final T)
+        pos = pos + T;
+
+        // -------------------------------
+
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 9. Calcular el centre d'un triangle (Baricentre)
+
+``` glsl
+vec3 C = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 10. Dibuixar n triangles (primitives) per segon
+
+Anem a assumir que volem que el GS emeti només els n primers triangles. Però si n vé donat pel temps t, anirem dibuixant més triangles cada segon fins haver dibuixat la figura sencera.
+
+Suposem que volem dibuixar els n primers triangles on n = 100*time (truncament).
+
+``` glsl
+uniform float time;
+int n = floor(100*time);
+
+if (gl_PrimitiveIDIn <= n) {
+	for (int i = 0; i < 3; i++) {
+        gfrontColor = vfrontColor[i];
+
+        // Transform Object Space -> Clip Space
+		vec3 pos = gl_in[i].gl_Position.xyz; // 1. Get Raw Object Position
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0); 	// D. Clip Space (Projection
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+```
+
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 11. Emetre els triangles amb il.luminació (enviar normal i posició al FS amb Eye Space)
+
+Nota: GS no calcula la il.luminació, ho prepara perquè fragment shader la calculi.
+
+// --- CONFIGURACIÓ ---
+in vec3 vNormal[];      // Normal que ve del Vertex Shader (Object Space)
+out vec3 gNormal;       // Normal cap al Fragment Shader (Eye Space)
+out vec3 gPos;          // Posició cap al Fragment Shader (Eye Space)
+
+uniform mat4 modelViewMatrix;
+uniform mat3 normalMatrix;
+
+void main() {
+    for (int i = 0; i < 3; i++) {
+        // 1. NORMAL: Transformem a Eye Space per càlculs de llum
+        // (Important: utilitzar normalMatrix)
+        gNormal = normalize(normalMatrix * vNormal[i]);
+
+        // 2. POSICIÓ (Física): Transformem a Eye Space 
+        // (Necessari per calcular el vector Llum L i Visió V al FS)
+        gPos = (modelViewMatrix * gl_in[i].gl_Position).xyz;
+
+        // 3. POSICIÓ (Pantalla): Transformem a Clip Space
+        // (Això és només per pintar el píxel al lloc correcte)
+        gl_Position = modelViewProjectionMatrix * gl_in[i].gl_Position;
+        
+        EmitVertex();
+    }
+    EndPrimitive();
+}
 
 <hr style="border: 15px solid blue;">
 <hr style="border: 15px solid red;">
