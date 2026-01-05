@@ -283,6 +283,7 @@ in vec4 vfrontColor[];
 
 // --- OUTPUTS (van al FS) ---
 out vec4 gfrontColor;
+// out vec2 gtexCoord; 
 
 // --- UNIFORMS ---
 uniform mat4 modelViewProjectionMatrix;
