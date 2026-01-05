@@ -1,27 +1,149 @@
-# Parcial 2-SHADERS
+# Índex
 
-
-## Índice
-- [Parcial 2-SHADERS](#parcial-2-shaders)
-  - [Tipos de esqueleto](#tipos-de-esqueleto)
-    - [Class A-Esqueleto (PER-VERTEX)](#class-a-esqueleto-per-vertex-deformación)
-      - [A-Vertex Shader](#a-vertex-shader)
-      - [A-Fragment Shader](#a-fragment-shader)
-    - [Class B-Esqueleto (PER-FRAGMENT)](#class-b-esqueleto-per-fragment)
-      - [B1: Texturas (Mapeado de Imágenes)](#b1-texturas-mapeado-de-imágenes)
-        - [B1-Vertex Shader](#b1-vertex-shader)
-        - [B1-Fragment Shader](#b1-fragment-shader)
-      - [B2: Iluminación (Modelo Phong / Alta Calidad)](#b2-iluminación-modelo-phong--alta-calidad)
-        - [B2-Vertex Shader](#b2-vertex-shader)
-        - [B2-Fragment Shader](#b2-fragment-shader)
-    - [Class C-Esqueleto (PER-GEOMETRY)](#class-c-esqueleto-per-geometry)
-      - [C-Vertex Shader](#c-vertex-shader)
-      - [C-Geometry Shader](#c-geometry-shader)
-      - [C-Fragment Shader](#c-fragment-shader)
-
+- [0. TEORIA](#0-teoria)
+  - [0.1 La Lògica Universal (Els 5 Passos)](#01-la-lògica-universal-els-5-passos)
+  - [0.2 Matrius de Rotació](#02-matrius-de-rotació)
+  - [0.3 Definició de Colors](#03-definició-de-colors)
+- [1. Skeletons](#1-skeletons)
+  - [Per Vertex (Class A)](#class-a-esqueleto-per-vertex-deformación)
+  - [Per Fragment (Class B)](#class-b-esqueleto-per-fragment)
+  - [Per Geometry (Class C)](#class-c-esqueleto-per-geometry)
+- [2. Receptes](#2-receptes)
+  - [Per Vertex](#a-per-vertex)
+  - [Per Fragment](#b-per-fragment)
+  - [Per Geometry](#c-per-geometry)
+- [3. Exercises](#3-exercises)
+  - [Per Vertex](#a-per-vertex-1)
+  - [Per Fragment](#b-per-fragment-1)
+  - [Per Geometry](#c-per-geometry-1)
 
 
 
+<hr style="border: 15px solid blue;">
+<hr style="border: 15px solid red;">
+<hr style="border: 15px solid blue;">
+
+# 0. TEORIA
+
+## 0.1 La Lògica Universal (Els 5 Passos)
+
+Aquesta és la seqüència **CANÒNICA** per transformar qualsevol geometria (vèrtexs o objectes enters) respecte al seu propi centre o un punt arbitrari.
+
+**L'ordre matemàtic és SAGRAT:**
+
+1. **Centrar:** Portar el punt de referència al `(0,0,0)`.
+2. **Escalar:** Fer-ho gran o petit (sempre es fa des de l'origen).
+3. **Rotar:** Girar (sempre es gira respecte a l'origen).
+4. **Descentrar:** Tornar el punt de referència al seu lloc original.
+5. **Moure (Translació Final):** Aplicar el moviment final (animació, explosió, etc.).
+
+```glsl
+// Suposem que tens:
+// 'pos': la posició del vèrtex
+// 'C': el centre de l'objecte (BoundingBox Center o Baricentre)
+// 'scale': float (ex: 2.0 per doble, 0.5 per meitat)
+// 'rotMatrix': matriu de rotació
+// 'desplacament': vector de moviment final
+
+// 1. CENTRAR
+pos = pos - C;
+
+// 2. ESCALAR
+pos = pos * scale;
+
+// 3. ROTAR
+pos = rotMatrix * pos; // En GLSL la matriu va a l'ESQUERRA
+
+// 4. DESCENTRAR (Restaurar posició original relativa)
+pos = pos + C;
+
+// 5. MOURE (Translació final / Explosió)
+pos = pos + desplacament;
+
+```
+
+---
+
+## 0.2 Matrius de Rotació
+
+Copia aquestes funcions si necessites rotar manualment. Recorda que `angle` ha d'estar en **radians**.
+
+### Rotació Eix X
+
+```glsl
+mat3 rotateX(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        1.0, 0.0, 0.0,
+        0.0,   c,  -s,
+        0.0,   s,   c
+    );
+}
+
+```
+
+### Rotació Eix Y
+
+```glsl
+mat3 rotateY(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+          c, 0.0,   s,
+        0.0, 1.0, 0.0,
+         -s, 0.0,   c
+    );
+}
+
+```
+
+### Rotació Eix Z
+
+```glsl
+mat3 rotateZ(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+          c,  -s, 0.0,
+          s,   c, 0.0,
+        0.0, 0.0, 1.0
+    );
+}
+
+```
+
+---
+
+## 0.3 Definició de Colors
+
+Snippet ràpid per tenir la paleta de colors bàsica a mà.
+
+```glsl
+const vec4 RED     = vec4(1.0, 0.0, 0.0, 1.0);
+const vec4 GREEN   = vec4(0.0, 1.0, 0.0, 1.0);
+const vec4 BLUE    = vec4(0.0, 0.0, 1.0, 1.0);
+const vec4 CYAN    = vec4(0.0, 1.0, 1.0, 1.0);
+const vec4 MAGENTA = vec4(1.0, 0.0, 1.0, 1.0);
+const vec4 YELLOW  = vec4(1.0, 1.0, 0.0, 1.0);
+const vec4 WHITE   = vec4(1.0, 1.0, 1.0, 1.0);
+const vec4 BLACK   = vec4(0.0, 0.0, 0.0, 1.0);
+const vec4 GREY    = vec4(0.5, 0.5, 0.5, 1.0);
+const vec4 ORANGE    = vec4(1.0, 0.5, 0.0, 1.0);
+const vec4 PURPLE    = vec4(0.5, 0.0, 0.5, 1.0);
+const vec4 VIOLET    = vec4(0.58, 0.0, 0.82, 1.0);
+const vec4 PINK      = vec4(1.0, 0.41, 0.7, 1.0);
+```
+
+<hr style="border: 15px solid blue;">
+<hr style="border: 15px solid red;">
+<hr style="border: 15px solid blue;">
+
+
+---
+
+
+# 1. Skeletons
 
 ## Class A-Esqueleto (PER-VERTEX) (Deformación)
 
@@ -326,3 +448,143 @@ void main()
 }
 
 ```
+
+
+
+<hr style="border: 15px solid blue;">
+<hr style="border: 15px solid red;">
+<hr style="border: 15px solid blue;">
+
+
+# 2. Receptes
+
+## A-Per Vertex
+
+
+### 1.
+
+
+## B-Per Fragment
+
+
+
+## C-Per Geometry
+
+### 1. Emetre un triangle corresponent al triangle original (amb el color sense il·luminació)
+
+``` glsl
+	for (int i = 0; i < 3; i++) {
+        gfrontColor = vfrontColor[i];
+
+        // Transform Object Space -> Clip Space
+		vec4 pos = gl_in[i].gl_Position; // 1. Get Raw Object Position
+        gl_Position = modelViewProjectionMatrix * pos; 	// D. Clip Space (Projection
+        EmitVertex();
+    }
+    EndPrimitive();
+```
+
+// Solució alternativa
+
+``` glsl
+	for (int i = 0; i < 3; i++) {
+        gfrontColor = vfrontColor[i];
+
+        // Transform Object Space -> Clip Space
+		vec3 pos = gl_in[i].gl_Position.xyz; // 1. Get Raw Object Position
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0); 	// D. Clip Space (Projection
+        EmitVertex();
+    }
+    EndPrimitive();
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 2. Emetre un triangle corresponent a la projecció del triangle original al pla Y anterior (Shadow)
+
+``` glsl
+	const vec4 COLOR_BLACK  = vec4(0.0, 0.0, 0.0, 1.0);
+    for( int i = 0 ; i < 3 ; i++ )
+    {
+        gfrontColor = COLOR_BLACK;
+		vec3 shadowPos = gl_in[i].gl_Position.xyz;	
+		shadowPos.y = boundingBoxMin.y;
+        
+        gl_Position = modelViewProjectionMatrix * vec4(shadowPos, 1.0);         
+        EmitVertex(); 
+    }
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
+### 3. Si és el 1r triangle (està processant la primera primitiva del objecte), dibuixar un rectangle centrat en Centre de costat Longitud, 0.01 per sota de boundingBoxMin.y
+
+Per aquest exemple, donarem el cas on:
+
+* Pintar el rectangle cyan
+* Rectangle de costat 2R, on R és la meitat de la diagonal de la capsa englobant de l’escena
+* Centrat en (C.x, boundingBoxMin.y, C.z), on C és el centre de la capsa englobant de l'escena
+
+``` glsl
+    if (gl_PrimitiveIDIn == 0) { 
+        // Calcular Centre i Longitud 
+        // "Sigui R la meitat de la diagonal... i sigui C el centre"
+        vec3 C = vec3(boundingBoxMax + boundingBoxMin) / 2.0;
+        float R = length(boundingBoxMax - boundingBoxMin) / 2.0;
+
+        // "0.01 per sota de boundingBoxMin.y"
+        vec3 Center = (C.x, boundingBoxMin.y - 0.01, C.z);
+        float Longitud = 2*R;
+        
+        // Rectangle de color Cyan
+        const vec4 CYAN = vec4(0.0, 1.0, 1.0, 1.0);
+        gfrontColor = CYAN;
+
+        // --- 2. DEFINICIÓ BASE (Centrat a 0,0,0) ---
+        // Creem un quadrat UNITARI (costat 1.0) centrat a l'origen.
+        // Així, quan multipliquem per 'Longitud', tindrà exactament la mida 'Longitud'.
+        // Ordre: Triangle Strip (Baix-Esq, Baix-Dreta, Dalt-Esq, Dalt-Dreta)
+        vec3 offsets[4];
+        offsets[0] = vec3(-0.5, 0.0, -0.5);
+        offsets[1] = vec3( 0.5, 0.0, -0.5);
+        offsets[2] = vec3(-0.5, 0.0,  0.5);
+        offsets[3] = vec3( 0.5, 0.0,  0.5);
+
+        // Pels 4 vèrtexs del quadrat
+        for (int i = 0; i < 4; i++) {
+            vec3 pos = offsets[i]; // 1. CENTRAR (Ja està al 0,0,0 local)
+
+            // 2. ESCALAR (Multipliquem per la mida final desitjada)
+            // De mida 1 passa a mida 'Longitud' (que és 2*R)
+            pos = pos * Longitud; 
+
+            // 3. ROTAR (No cal aquí)
+
+            // 4. DESCENTRAR (No cal perquè el nostre origen local era correcte)
+
+            // 5. MOURE (Translació final a la posició de destí)
+            pos = pos + Center;
+
+            // Sortida
+            gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+            EmitVertex();
+        }
+        EndPrimitive();
+    }
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 4. Dibuixar un c
+
+
+<hr style="border: 15px solid blue;">
+<hr style="border: 15px solid red;">
+<hr style="border: 15px solid blue;">
+
+# 3. Exercises
+
+## A-Per Vertex
+## B-Per Fragment
+## C-Per Geometry
