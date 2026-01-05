@@ -4,14 +4,6 @@
 
 ### 1.A.Textures
 
-Here is your clean, print-ready **Frankenstein Helper Manual**.
-
-This document contains only the tools. Copy-paste these functions at the top of your shader (before `main`), and use the examples inside `main()` to build your solution.
-
----
-
-# 🔌 GLSL Helper Functions Manual
-
 ### 1. `getIcon`
 
 **Description:**
@@ -190,4 +182,174 @@ if (!inside) draw = false;
 
 ## 3.Geometry Shaders
 
+Aquí tienes tu **Hoja Maestra para Geometry Shaders**.
+
+He dividido esto en dos partes:
+
+1. **La Teoría (The Pipeline):** Una explicación visual rápida de cómo fluyen los datos (inputs/outputs).
+2. **El Manual de Funciones:** Las 3 recetas exactas que pediste, listas para copiar y pegar.
+
+---
+
+## ⚙️ Parte 1: El Flujo del Geometry Shader
+
+El Geometry Shader (GS) es un **procesador de primitivas**. A diferencia del Vertex Shader (que procesa 1 vértice) o el Fragment Shader (que procesa 1 píxel), el GS recibe **la figura completa** (un triángulo entero) y puede decidir qué hacer con él: borrarlo, clonarlo o transformarlo en otra cosa.
+
+### 1. El Input (`gl_in[]`)
+
+El GS recibe los datos en **Arrays**. Como un triángulo tiene 3 vértices, recibes arrays de tamaño 3.
+
+* `gl_in[0]`: Datos del primer vértice.
+* `gl_in[1]`: Datos del segundo vértice.
+* `gl_in[2]`: Datos del tercer vértice.
+
+**Importante:** Si calculaste `gl_Position` en el Vertex Shader, aquí la lees como `gl_in[i].gl_Position`.
+
+### 2. El Output (`Triangle Strip`)
+
+El GS no emite "triángulos sueltos", emite una **Tira de Triángulos** (`triangle_strip`).
+
+* Funciona conectando puntos en orden: 1-2-3 crea un triángulo, el 4 crea otro usando 2-3-4, etc.
+* **`EmitVertex()`**: Envía el vértice actual (con sus colores, normales y posición) a la GPU.
+* **`EndPrimitive()`**: Corta la tira. Es como levantar el lápiz del papel. Si no lo usas, la GPU intentará conectar tu sombra con tu objeto real con una línea fea.
+
+### 3. La Memoria (`max_vertices`)
+
+Al principio del shader debes declarar cuántos vértices *como máximo* vas a generar.
+
+* Solo el triángulo original: `max_vertices = 3`.
+* Triángulo + Sombra: `max_vertices = 6`.
+* Un cubo (Rubik): `max_vertices = 24`.
+
+---
+
+## 🛠️ Parte 2: Recetario de Funciones (Copy-Paste)
+
+Copia estas funciones antes del `main()` o úsalas como plantilla dentro de él.
+
+### 1. `emitBasicTriangle` (El Básico)
+
+**Descripción:**
+La operación más simple. Coge el triángulo que entra, aplica la matriz de proyección y lo pinta tal cual. Es el "Pass-Through".
+
+* **Requisito:** `layout(triangle_strip, max_vertices = 3) out;`
+
+**Código:**
+
+```glsl
+void emitBasicTriangle(mat4 MVP)
+{
+    for(int i = 0; i < 3; i++)
+    {
+        // 1. Copiar atributos (Color, Normales, TexCoords si los hay)
+        gfrontColor = vfrontColor[i]; 
+
+        // 2. Transformar posición (Object Space -> Clip Space)
+		vec4 pos = gl_in[i].gl_Position;
+        gl_Position = modelViewProjectionMatrix * pos; 
+        
+        // 3. Emitir
+        EmitVertex();
+    }
+    EndPrimitive(); // ¡Importante cerrar el triángulo!
+}
+
+```
+
+---
+
+### 2. `emitShadow` (La Sombra)
+
+**Descripción:**
+Genera un segundo triángulo aplastado contra el suelo (`y = suelo`). Se suele pintar de negro.
+
+* **Truco:** Funciona mejor si el Vertex Shader envía las coordenadas en *Object Space* (sin multiplicar por MVP), para que el GS pueda aplastar la Y fácilmente antes de proyectar.
+* **Requisito:** `layout(triangle_strip, max_vertices = 6) out;` (3 para el objeto + 3 para la sombra).
+
+**Código:**
+
+```glsl
+void emitShadow(mat4 MVP, float floorY)
+{
+    // --- PASO 1: Pintar el triángulo negro aplastado ---
+    for(int i = 0; i < 3; i++)
+    {
+        gfrontColor = vec4(0.0, 0.0, 0.0, 1.0); // Color Negro
+
+        // A. Coger posición original (Object Space)
+        vec4 pos = gl_in[i].gl_Position;
+
+        // B. Aplastar contra el suelo (Shadow Logic)
+        pos.y = floorY; 
+
+        // C. Proyectar
+        gl_Position = modelViewProjectionMatrix * pos;
+        EmitVertex();
+    }
+    EndPrimitive();
+
+    // --- PASO 2: Pintar el objeto real encima ---
+    // (Reutilizamos la lógica del básico)
+    for(int i = 0; i < 3; i++)
+    {
+        gfrontColor = vfrontColor[i];
+        gl_Position = MVP * gl_in[i].gl_Position;
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+```
+
+---
+
+### 3. `emitQuad` (El Cuadrado / Truco de 4 Iteraciones)
+
+**Descripción:**
+Genera un cuadrado perfecto usando una `triangle_strip` de 4 vértices.
+
+* **El Orden Mágico:** Para que salga un cuadrado y no un reloj de arena, el orden de los vértices debe ser en **Z (Zig-Zag)**:
+1. Bottom-Left `(-1, -1)`
+2. Bottom-Right `( 1, -1)`
+3. Top-Left `(-1,  1)`
+4. Top-Right `( 1,  1)`
+
+
+* **Uso:** Ideal para crear suelos, billboards (partículas) o las caras del Cubo de Rubik.
+
+**Código:**
+
+```glsl
+void emitQuad(vec3 center, float size, mat4 MVP)
+{
+    // 1. Definir los 4 offsets en orden "Triangle Strip" (Z pattern)
+    vec3 OFFSETS[4];
+    OFFSETS[0] = vec3(-1.0, -1.0, 0.0); // Bottom-Left
+    OFFSETS[1] = vec3( 1.0, -1.0, 0.0); // Bottom-Right
+    OFFSETS[2] = vec3(-1.0,  1.0, 0.0); // Top-Left
+    OFFSETS[3] = vec3( 1.0,  1.0, 0.0); // Top-Right
+
+    // 2. Loop de 4 iteraciones
+    for(int i = 0; i < 4; i++)
+    {
+        gfrontColor = vec4(0.0, 1.0, 1.0, 1.0); // Color (ej. Cyan)
+
+        // A. Calcular posición: Centro + (Offset escalado)
+        vec3 pos = center + (OFFSETS[i] * size);
+
+        // B. Proyectar
+        gl_Position = MmodelViewProjectionMatrixVP * vec4(pos, 1.0);
+        
+        // C. TexCoords (Truco extra: Coinciden con los offsets normalizados 0..1)
+        // gtexCoord = vec2(OFFSETS[i].x > 0 ? 1 : 0, OFFSETS[i].y > 0 ? 1 : 0);
+
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+```
+
+
 ## 4.Plugins
+
