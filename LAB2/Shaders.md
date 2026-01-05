@@ -276,14 +276,13 @@ Este es el núcleo. Aquí es donde **transformas** las coordenadas a Clip Space 
 #version 330 core
 
 layout(triangles) in; 
-layout(triangle_strip, max_vertices = 36) out;
+layout(triangle_strip, max_vertices = 3) out;
 
 // --- INPUTS (vienen del VS como arrays []) ---
 in vec4 vfrontColor[]; 
 
 // --- OUTPUTS (van al FS) ---
 out vec4 gfrontColor;
-out vec2 gtexCoord; 
 
 // --- UNIFORMS ---
 uniform mat4 modelViewProjectionMatrix;
