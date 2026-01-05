@@ -350,6 +350,138 @@ void emitQuad(vec3 center, float size, mat4 MVP)
 
 ```
 
+Exactament, ho has entès a la perfecció. L'estructura mental que has de tenir per a qualsevol transformació en el Geometry Shader (GS) és sempre aquesta "recepta".
+
+Anem a resoldre els teus dubtes punt per punt.
+
+### 1. La Lògica Universal (Els 4 o 5 passos)
+
+Sí, l'única cosa extra que et poden demanar és l'**Escalat (Scale)**. L'ordre canònic complet per transformar un vèrtex respecte al seu centre és:
+
+1. **Centrar:** `pos = pos - Centre;` (Portar al (0,0,0) local)
+2. **Escalar:** `pos = pos * factorEscala;` (Fer gran/petit)
+3. **Rotar:** `pos = MatriuRotacio * pos;` (Girar)
+4. **Descentrar:** `pos = pos + Centre;` (Tornar al lloc original)
+5. **Moure:** `pos = pos + Translacio;` (L'explosió o moviment final)
+
+Si et demanessin escalar (per exemple, que els trossos es facin petits mentre exploten per desaparèixer), el codi seria:
+
+```glsl
+// ... pasos previs ...
+pos = pos - BT;          // 1. Centrar
+pos = pos * (1.0 - time); // 2. Escalar (ex: es fa petit amb el temps)
+pos = rotacio * pos;     // 3. Rotar
+pos = pos + BT;          // 4. Descentrar
+pos = pos + T;           // 5. Moure
+
+```
+
+### 2. Matrius de Rotació (X, Y, Z)
+
+Correcte. La matriu que hem fet servir abans era per a **Z**. Si et demanen rotar respecte a **X** o **Y**, la matriu canvia. Has de saber-te les 3 de memòria (o saber deduir-les):
+
+**Rotació en Z (la que has fet servir):**
+Gira coses en el pla XY. La Z es queda igual.
+
+```glsl
+mat3 rotZ = mat3(
+    c,  s, 0,
+   -s,  c, 0,
+    0,  0, 1
+);
+
+```
+
+**Rotació en X:**
+Gira coses en el pla YZ. La X es queda igual.
+
+```glsl
+mat3 rotX = mat3(
+    1,  0,  0,
+    0,  c,  s,
+    0, -s,  c
+);
+
+```
+
+**Rotació en Y:**
+Gira coses en el pla XZ. La Y es queda igual.
+*Ull viu: aquí els signes del sinus canvien de lloc respecte a les altres.*
+
+```glsl
+mat3 rotY = mat3(
+    c,  0, -s,
+    0,  1,  0,
+    s,  0,  c
+);
+
+```
+
+### 3. Per què la mitjana de normals és `vec3`?
+
+Perquè una normal no és un valor d'intensitat (com un `float`), sinó una **fletxa** que apunta cap a algun lloc en l'espai 3D.
+
+Imagina que tens tres fletxes sortint del triangle:
+
+1. Apuna amunt `(0, 1, 0)`
+2. Apunta a la dreta `(1, 0, 0)`
+3. Apunta en diagonal `(1, 1, 0)`
+
+La "mitjana" ha de ser una nova fletxa que apunti entremig de les tres. Si féssim servir un `float`, perdríem la informació de "cap a on" apunta.
+
+```glsl
+// Sumem component a component (x amb x, y amb y...)
+vec3 n = (vNormal[0] + vNormal[1] + vNormal[2]) / 3.0; 
+
+```
+
+### 4. Rotació respecte a un eix perpendicular a Z?
+
+Si et diuen "eix perpendicular a Z", t'estan dient implícitament que usis l'eix **X** o l'eix **Y** (tots dos són perpendiculars a Z).
+
+Tanmateix, la pregunta més difícil que et podrien fer és: **"Rota el triangle sobre el seu propi vector Normal"** (o un vector arbitrari qualsevol).
+
+Això es resol amb la **Fórmula de Rotació de Rodrigues** (Axis-Angle Rotation). Si et cau això, no intentis construir la matriu a mà component a component perquè és infernal. Usa aquesta funció auxiliar (copia-la a dalt del teu shader):
+
+**Funció per rotar sobre un eix arbitrari (Qualsevol `axis`):**
+
+```glsl
+mat3 rotationMatrix(vec3 axis, float angle) {
+    axis = normalize(axis); // Importantíssim normalitzar l'eix
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+
+    return mat3(
+        oc * axis.x * axis.x + c,           oc * axis.x * axis.y + axis.z * s,  oc * axis.z * axis.x - axis.y * s,
+        oc * axis.x * axis.y - axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z + axis.x * s,
+        oc * axis.z * axis.x + axis.y * s,  oc * axis.y * axis.z - axis.x * s,  oc * axis.z * axis.z + c
+    );
+}
+
+```
+
+**Com l'usaries al `main`:**
+
+```glsl
+// Exemple: Rotar sobre la Normal del triangle (eix arbitrari)
+vec3 axis = n; // La normal mitjana que has calculat
+float angle = angSpeed * time;
+
+mat3 R = rotationMatrix(axis, angle);
+
+// Després apliques R igual que abans:
+pos = pos - BT;
+pos = R * pos; // R generada per la funció
+pos = pos + BT;
+
+```
+
+**Resum per l'examen:**
+
+1. Aprèn-te de memòria l'estructura **Centrar -> Escalar -> Rotar -> Descentrar -> Moure**.
+2. Tingues a mà les matrius bàsiques **X, Y, Z**.
+3. Si et demanen rotar sobre un eix "rar" (com la normal), copia la funció `rotationMatrix` de Rodrigues.
 
 ## 4.Plugins
 
