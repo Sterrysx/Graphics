@@ -257,16 +257,12 @@ En este tipo de ejercicios, el Vertex Shader suele ser muy simple ("Pass-Through
 layout (location = 0) in vec3 vertex;
 layout (location = 2) in vec3 color;
 
-out vec4 vfrontColor; // Color que enviaremos al GS
+out vec4 vfrontColor; 
 
-// NOTA: A veces no necesitamos matrices aquí si el GS hace todo el trabajo.
 void main()
 {
-    // 1. Pasamos el color
     vfrontColor = vec4(color, 1.0);
 
-    // 2. IMPORTANTE: Pasamos la posición en OBJECT SPACE (sin multiplicar por matrices).
-    // El GS decidirá dónde colocar los nuevos vértices y aplicará la proyección.
     gl_Position = vec4(vertex, 1.0); 
 }
 
@@ -279,48 +275,30 @@ Este es el núcleo. Aquí es donde **transformas** las coordenadas a Clip Space 
 ```glsl
 #version 330 core
 
-// --- CONFIGURACIÓN DE ENTRADA/SALIDA ---
-layout(triangles) in;  // Recibimos un triángulo (3 vértices)
-layout(triangle_strip, max_vertices = 36) out; // MÁXIMO de vértices a generar (ajustar según ejercicio)
+layout(triangles) in; 
+layout(triangle_strip, max_vertices = 36) out;
 
 // --- INPUTS (vienen del VS como arrays []) ---
 in vec4 vfrontColor[]; 
 
 // --- OUTPUTS (van al FS) ---
 out vec4 gfrontColor;
-out vec2 gtexCoord; // Si necesitas texturas, genéralas aquí
+out vec2 gtexCoord; 
 
 // --- UNIFORMS ---
 uniform mat4 modelViewProjectionMatrix;
 
 void main( void )
 {
-    // EJEMPLO 1: Bucle estándar (copiar el triángulo tal cual)
-    // ---------------------------------------------------------
-    for( int i = 0 ; i < 3 ; i++ )
+
+    for(int i = 0; i < 3; i++)
     {
         gfrontColor = vfrontColor[i];
-        
-        // Aquí SÍ aplicamos la matriz de proyección
-        gl_Position = modelViewProjectionMatrix * gl_in[i].gl_Position; 
-        
+        vec4 pos = gl_in[i].gl_Position;
+        gl_Position = modelViewProjectionMatrix * pos; 
         EmitVertex(); // Emite 1 vértice
     }
-    EndPrimitive(); // Cierra el triángulo (triangle_strip)
-
-
-    // EJEMPLO 2: Generar geometría nueva (p.ej. un CUBITO en el centro)
-    // ---------------------------------------------------------
-    // 1. Calcular el centro del triángulo original (Object Space)
-    // vec3 center = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
-    
-    // 2. Emitir vértices de una nueva forma relativos a 'center'
-    // (Ver ejercicio RGB Color Space o Rubiks para lógica de cubos completa)
-    // gfrontColor = ...
-    // gl_Position = modelViewProjectionMatrix * vec4(center + offset, 1.0);
-    // EmitVertex();
-    // ...
-    // EndPrimitive();
+    EndPrimitive(); // Cierra el triángulo 
 }
 
 ```
@@ -334,7 +312,7 @@ El Fragment Shader suele ser idéntico al de la **Class A**, solo que recibe los
 
 // --- INPUT (Viene del Geometry Shader) ---
 in vec4 gfrontColor; 
-// in vec2 gtexCoord; // Si usaste texturas en el GS
+// in vec2 gtexCoord; 
 
 // --- OUTPUT ---
 out vec4 fragColor;
