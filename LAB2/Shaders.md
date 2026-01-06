@@ -1,9 +1,6 @@
 # Índex
 
 - [0. TEORIA](#0-teoria)
-  - [0.1 La Lògica Universal (Els 5 Passos)](#01-la-lògica-universal-els-5-passos)
-  - [0.2 Matrius de Rotació](#02-matrius-de-rotació)
-  - [0.3 Definició de Colors](#03-definició-de-colors)
 - [1. Skeletons](#1-skeletons)
   - [Per Vertex (Class A)](#class-a-esqueleto-per-vertex-deformación)
   - [Per Fragment (Class B)](#class-b-esqueleto-per-fragment)
@@ -135,12 +132,122 @@ const vec4 VIOLET    = vec4(0.58, 0.0, 0.82, 1.0);
 const vec4 PINK      = vec4(1.0, 0.41, 0.7, 1.0);
 ```
 
+---
+
+## 0.4 Càlcul de la Normal
+
+### 1. Concepte Matemàtic: El Producte Vectorial
+
+Per calcular una normal necessites **dos vectors** que estiguin sobre la superfície ( i ).
+El producte vectorial (**Cross Product**) et dona un tercer vector perpendicular a tots dos.
+
+**La Regla d'Or:** Per a qualsevol polígon pla (sigui un triangle, un quadrat o un pentàgon), **tota la superfície té la mateixa normal**.
+
+* **Triangle:** Fas servir els seus 3 vèrtexs.
+* **Quadrat:** Aganfes 3 vèrtexs qualssevol (fan una cantonada) i calcules la normal com si fos un triangle. La normal resultant val per a tot el quadrat.
+
+---
+
+### 2. Opció A: Càlcul al Geometry Shader (Manual)
+
+Aquesta és la manera clàssica i robusta. Calcules la normal abans d'emetre els vèrtexs i l'envies al FS.
+
+#### Cas 1: La Base (Un Triangle)
+
+Tens 3 punts: .
+
+1. Calcula el vector del costat 1 ().
+2. Calcula el vector del costat 2 ().
+3. Fes el cross product.
+
+```glsl
+    vec3 V0 = gl_in[0].gl_Position.xyz;
+    vec3 V1 = gl_in[1].gl_Position.xyz;
+    vec3 V2 = gl_in[2].gl_Position.xyz;
+
+    // Vectors arestes
+    vec3 edge1 = V1 - V0;
+    vec3 edge2 = V2 - V0;
+
+    // Normal
+    vec3 N = normalize(cross(edge1, edge2));
+    
+    // ATENCIÓ: Si el triangle es dibuixa en sentit anti-horari (CCW), 
+    // la normal surt cap a fora.
+
+```
+
+#### Cas 2: Una Paret o Quadrat (4 Punts)
+
+Tens 4 punts () formant un pla. No cal complicar-se.
+**Estratègia:** Ignora el 4t punt. Fes servir  i  i aplica la mateixa fórmula del triangle.
+
+Si estàs fent una **extrusió** (prisma), sovint és més fàcil pensar en vectors "físics":
+
+* Vector **Horitzontal** (el terra).
+* Vector **Vertical** (la paret).
+
+```glsl
+    // Suposem que estem fent una paret entre 'base' i 'top'
+    vec3 v_base_curr = ...;
+    vec3 v_base_next = ...;
+    vec3 v_top_curr  = ...;
+
+    // 1. Vector Horitzontal (terra)
+    vec3 horitzontal = v_base_next - v_base_curr;
+
+    // 2. Vector Vertical (paret amunt)
+    vec3 vertical = v_top_curr - v_base_curr;
+
+    // 3. Normal (Terra x Paret = Enfora)
+    vec3 NormalParet = normalize(cross(horitzontal, vertical));
+    
+    // Assignem aquesta normal a TOTS els 4 vèrtexs del quadrat
+    gNormal = NormalParet;
+
+```
+
+---
+
+### 3. Opció B: Càlcul al Fragment Shader (Automàtic)
+
+Aquesta opció és perfecta per a figures de cares planes (Low Poly, Prismes, Cubs) si no vols calcular res al GS.
+
+**Com funciona:** La GPU mira la posició del píxel veí i dedueix la inclinació de la cara.
+
+**GS:**
+Només envia la posició (`gPos`). No cal calcular normals.
+
+**FS:**
+Fes servir les derivades `dFdx` i `dFdy`.
+
+```glsl
+#version 330 core
+
+in vec3 gPos; // Posició en Eye Space (interpolada)
+out vec4 fragColor;
+
+void main() {
+    // CALCULAR ELS VECTORS TANGENTS AUTOMÀTICAMENT
+    vec3 dx = dFdx(gPos); // Com canvia la posició cap a la dreta
+    vec3 dy = dFdy(gPos); // Com canvia la posició cap amunt
+    
+    // CALCULAR LA NORMAL
+    // El producte vectorial de les derivades és la normal de la superfície plana
+    vec3 N = normalize(cross(dx, dy));
+
+    // ... Il·luminació normal ...
+    fragColor = vec4(N.z, N.z, N.z, 1.0);
+}
+
+```
+
+
+
+
 <hr style="border: 15px solid blue;">
 <hr style="border: 15px solid red;">
 <hr style="border: 15px solid blue;">
-
-
----
 
 
 # 1. Skeletons
@@ -555,7 +662,7 @@ void main() {
 <hr style="height: 2px; background-color: blue; border: none;">
 
 
-### 3. Passar la posició en Eye Space
+### 4. Passar la posició en Eye Space
 
 // Si no hi ha GS s'envia en Eye space
 
@@ -575,6 +682,34 @@ void main() {
 
 
 ## B-Per Fragment
+
+### 1. Assignar com a color del fragment el gris resultant d'utilitzar la component Z de la normal en eye space
+
+``` glsl
+#version 330 core
+
+in vec3 gNormal;    // Normal en Eye Space (ve del GS)
+// in vec4 gfrontColor; // En aquest cas, ignorem el color original
+out vec4 fragColor;
+
+void main() {
+    // 1. NORMALITZAR (Vital!)
+    // La interpolació entre vèrtexs escurça els vectors, cal normalitzar sempre al FS.
+    vec3 N = normalize(gNormal);
+
+    // 2. AGAFAR LA COMPONENT Z
+    // En Eye Space, la Z positiva apunta cap a la càmera.
+    // Això equival a fer N dot L, on L = (0,0,1).
+    float intensity = N.z;
+
+    // 3. PINTAR EN GRIS
+    // Assignem la intensitat a R, G i B.
+    fragColor = vec4(intensity, intensity, intensity, 1.0);
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
 
 
 
@@ -740,7 +875,7 @@ void main ( void() ) {
 <hr style="height: 2px; background-color: blue; border: none;">
 
 
-### 6. Treure els vèrtexs en Clip Space
+### 6. Treure els vèrtexs en Clip Space (gl_Position)
 
 Nota: Sempre ens demanaran que treguins els vèrtexs en Clip Space el GS
 
@@ -837,7 +972,7 @@ Suposem que volem dibuixar els n primers triangles on n = 100*time (truncament).
 
 ``` glsl
 uniform float time;
-int n = floor(100*time);
+int n = floor(100.0*time);
 
 if (gl_PrimitiveIDIn <= n) {
 	for (int i = 0; i < 3; i++) {
@@ -885,6 +1020,402 @@ void main() {
     }
     EndPrimitive();
 }
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 12. Emetre un cub de costat Longitud centrat al punt més proper al baricentre del triangle
+
+Nota:Si dividim l'espai en cubs de mida Longitud, el centre de qualsevol cub es troba fent: round(Posicio / Longitud) * Longitud.
+
+``` glsl
+// --- 1. CÀLCUL DEL CENTRE I MIDA ---
+    vec3 BT = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
+    
+    // Suposem que la Longitud ens la donen o la calculem (ex: constant)
+    float Longitud = 0.5; // O un uniform, o 2*R...
+
+    // "Punt més proper al baricentre" (Quantització / Snap to Grid)
+    // Això troba el centre del "voxel" on cau el triangle
+    vec3 Center = round(BT / Longitud) * Longitud;
+
+    // --- 2. GEOMETRIA BASE (Cub Unitari al 0,0,0) ---
+    // Definim els 8 vèrtexs del cub unitari (-0.5 a 0.5)
+    vec3 v[8];
+    v[0] = vec3(-0.5, -0.5, -0.5);
+    v[1] = vec3( 0.5, -0.5, -0.5);
+    v[2] = vec3(-0.5,  0.5, -0.5);
+    v[3] = vec3( 0.5,  0.5, -0.5);
+    v[4] = vec3(-0.5, -0.5,  0.5);
+    v[5] = vec3( 0.5, -0.5,  0.5);
+    v[6] = vec3(-0.5,  0.5,  0.5);
+    v[7] = vec3( 0.5,  0.5,  0.5);
+
+    // Definim les 6 cares utilitzant índexs (Triangle Strips)
+    // Cada fila és una cara (4 vèrtexs en ZIG-ZAG)
+    int faces[6][4] = int[][](
+        int[](4, 5, 6, 7), // Front (+Z)
+        int[](1, 0, 3, 2), // Back (-Z)
+        int[](2, 3, 6, 7), // Top (+Y)
+        int[](4, 5, 0, 1), // Bottom (-Y)
+        int[](5, 1, 7, 3), // Right (+X)
+        int[](0, 4, 2, 6)  // Left (-X)
+    );
+
+    // --- 3. BUCLE DE DIBUIXAT (6 CARES) ---
+    const vec4 GREY = vec4(0.8);
+    
+    for (int f = 0; f < 6; f++) {
+        gfrontColor = GREY; // O un color diferent per cara
+
+        // Per a cada vèrtex de la cara (Strip de 4)
+        for (int i = 0; i < 4; i++) {
+            // Obtenim el vèrtex base unitari
+            int idx = faces[f][i];
+            vec3 pos = v[idx]; 
+
+            // --- ELS 5 PASSOS UNIVERSALS ---
+            
+            // 1. CENTRAR: (Ja està centrat a l'origen local 0,0,0)
+            
+            // 2. ESCALAR: Multipliquem per la mida desitjada
+            // (El cub unitari fa 1.0, ara farà 'Longitud')
+            pos = pos * Longitud;
+
+            // 3. ROTAR: (Opcional, aquí no en demanen)
+
+            // 4. DESCENTRAR: (No cal)
+
+            // 5. MOURE: Portar al centre calculat 
+            pos = pos + Center;
+
+            // --- PROJECCIÓ ---
+            gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+            EmitVertex();
+        }
+        EndPrimitive(); // Tanquem la tira després de cada cara (important!)
+    }
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 13. Emetre un cub de costat Longitud centrat al punt més proper al baricentre del triangle, pintant el cub del color més proper en distància Euclídea al color del vèrtex (a una llista de colors ja definida).
+
+``` glsl
+#version 330 core
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 24) out;
+
+in vec4 vfrontColor[];
+out vec4 gfrontColor;
+
+uniform mat4 modelViewProjectionMatrix;
+
+// --- DEFINICIÓ DE LA PALETA I FUNCIÓ AUXILIAR ---
+const vec4 PALETTE[5] = vec4[](
+    vec4(1.0, 0.0, 0.0, 1.0), // Vermell
+    vec4(0.0, 1.0, 0.0, 1.0), // Verd
+    vec4(0.0, 0.0, 1.0, 1.0), // Blau
+    vec4(0.0, 1.0, 1.0, 1.0), // Cyan
+    vec4(1.0, 1.0, 0.0, 1.0)  // Groc
+);
+
+vec4 findNearestColor(vec4 inputColor) {
+    vec4 bestColor = PALETTE[0];
+    float minDist = 1000.0; 
+
+    for (int i = 0; i < 5; i++) {
+        float d = distance(inputColor, PALETTE[i]);
+        if (d < minDist) {
+            minDist = d;
+            bestColor = PALETTE[i];
+        }
+    }
+    return bestColor;
+}
+
+void main() {
+    // --- 1. CÀLCUL DEL CENTRE I MIDA ---
+    vec3 BT = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
+    
+    // Suposem que la Longitud ens la donen o la calculem (ex: constant)
+    float Longitud = 0.5; // (Aquest és el teu 'step')
+
+    // "Punt més proper al baricentre" (Quantització / Snap to Grid)
+    vec3 Center = round(BT / Longitud) * Longitud;
+
+    // --- CÀLCUL DEL COLOR (NOU) ---
+    // Calculem el promig i busquem el més proper a la llista
+    vec4 avgColor = (vfrontColor[0] + vfrontColor[1] + vfrontColor[2]) / 3.0;
+    vec4 FinalColor = findNearestColor(avgColor);
+
+    // --- 2. GEOMETRIA BASE (Cub Unitari al 0,0,0) ---
+    vec3 v[8];
+    v[0] = vec3(-0.5, -0.5, -0.5);
+    v[1] = vec3( 0.5, -0.5, -0.5);
+    v[2] = vec3(-0.5,  0.5, -0.5);
+    v[3] = vec3( 0.5,  0.5, -0.5);
+    v[4] = vec3(-0.5, -0.5,  0.5);
+    v[5] = vec3( 0.5, -0.5,  0.5);
+    v[6] = vec3(-0.5,  0.5,  0.5);
+    v[7] = vec3( 0.5,  0.5,  0.5);
+
+    // Definim les 6 cares utilitzant índexs (Triangle Strips)
+    int faces[6][4] = int[][](
+        int[](4, 5, 6, 7), // Front (+Z)
+        int[](1, 0, 3, 2), // Back (-Z)
+        int[](2, 3, 6, 7), // Top (+Y)
+        int[](4, 5, 0, 1), // Bottom (-Y)
+        int[](5, 1, 7, 3), // Right (+X)
+        int[](0, 4, 2, 6)  // Left (-X)
+    );
+
+    // --- 3. BUCLE DE DIBUIXAT (6 CARES) ---
+    
+    for (int f = 0; f < 6; f++) {
+        gfrontColor = FinalColor; // Assignem el color calculat
+
+        // Per a cada vèrtex de la cara (Strip de 4)
+        for (int i = 0; i < 4; i++) {
+            // Obtenim el vèrtex base unitari
+            int idx = faces[f][i];
+            vec3 pos = v[idx]; 
+
+            // --- ELS 5 PASSOS UNIVERSALS ---
+            
+            // 1. CENTRAR: (Ja està centrat a l'origen local 0,0,0)
+            
+            // 2. ESCALAR: Multipliquem per la mida desitjada
+            // (El cub unitari fa 1.0, ara farà 'Longitud')
+            pos = pos * Longitud;
+
+            // 3. ROTAR: (Opcional, aquí no en demanen)
+
+            // 4. DESCENTRAR: (No cal)
+
+            // 5. MOURE: Portar al centre calculat 
+            pos = pos + Center;
+
+            // --- PROJECCIÓ ---
+            gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+            EmitVertex();
+        }
+        EndPrimitive(); // Tanquem la tira després de cada cara (important!)
+    }
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
+### 14. Emetre un cub de costat Longitud centrat al punt més proper al baricentre del triangle, assignant-li una textura a la cara superior
+
+``` glsl
+#version 330 core
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 24) out;
+
+in vec4 vfrontColor[];
+
+// OUTS cap al Fragment Shader
+out vec4 gfrontColor;
+out vec2 gTexCoord;   // Coordenades de textura (s, t)
+flat out int isTop;   // FLAG: 1 si és Top, 0 si no. (FLAT = sense interpolar)
+
+uniform mat4 modelViewProjectionMatrix;
+
+void main() {
+    // --- 1. CÀLCUL DEL CENTRE I MIDA (Igual que abans) ---
+    vec3 BT = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
+    
+    float Longitud = 0.5; // Constant o Uniform
+    vec3 Center = round(BT / Longitud) * Longitud; // Lego Snap
+
+    // --- 2. DEFINICIÓ DEL CUB ---
+    vec3 v[8];
+    v[0] = vec3(-0.5, -0.5, -0.5); v[1] = vec3( 0.5, -0.5, -0.5);
+    v[2] = vec3(-0.5,  0.5, -0.5); v[3] = vec3( 0.5,  0.5, -0.5);
+    v[4] = vec3(-0.5, -0.5,  0.5); v[5] = vec3( 0.5, -0.5,  0.5);
+    v[6] = vec3(-0.5,  0.5,  0.5); v[7] = vec3( 0.5,  0.5,  0.5);
+
+    int faces[6][4] = int[][](
+        int[](4, 5, 6, 7), // 0: Front
+        int[](1, 0, 3, 2), // 1: Back
+        int[](2, 3, 6, 7), // 2: TOP (+Y) -> La important
+        int[](4, 5, 0, 1), // 3: Bottom
+        int[](5, 1, 7, 3), // 4: Right
+        int[](0, 4, 2, 6)  // 5: Left
+    );
+
+    // Coordenades de textura per a un quadrat (ordre Triangle Strip: ZIG-ZAG)
+    // 0: Baix-Esq, 1: Baix-Dreta, 2: Dalt-Esq, 3: Dalt-Dreta
+    vec2 quadUV[4] = vec2[](
+        vec2(0.0, 0.0), 
+        vec2(1.0, 0.0), 
+        vec2(0.0, 1.0), 
+        vec2(1.0, 1.0)
+    );
+
+    const vec4 GREY = vec4(0.8, 0.8, 0.8, 1.0);
+
+    // --- 3. BUCLE D'EMISSIÓ ---
+    for (int f = 0; f < 6; f++) {
+        
+        // Determinem si som a la cara TOP (índex 2)
+        int currentIsTop = 0;
+        if (f == 2) currentIsTop = 1;
+        
+        for (int i = 0; i < 4; i++) {
+            // OUT 1: Flag (flat)
+            isTop = currentIsTop;
+
+            // OUT 2: Color (Sempre Gris)
+            gfrontColor = GREY;
+
+            // OUT 3: Textura
+            // Només té sentit si isTop==1, però passem el valor sempre per evitar errors
+            gTexCoord = quadUV[i]; 
+
+            // Càlcul posició
+            vec3 pos = v[faces[f][i]]; 
+            pos = pos * Longitud; // Escalar
+            pos = pos + Center;   // Moure
+
+            gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+            EmitVertex();
+        }
+        EndPrimitive();
+    }
+}
+```
+
+// El FS quedaria així:
+
+``` glsl
+#version 330 core
+
+// INPUTS (Han de coincidir amb el GS)
+in vec4 gfrontColor;
+in vec2 gTexCoord;
+flat in int isTop; // Rebem l'enter sense interpolar
+
+out vec4 fragColor;
+
+uniform sampler2D colorMap; // La textura (ex: una cara de Lego, una caixa, etc.)
+
+void main() {
+    if (isTop == 1) {
+        // --- OPCIÓ A: Textura pura (La foto tal qual) ---
+        // El color final és exactament el de la imatge. El gfrontColor s'ignora.
+        fragColor = texture(colorMap, gTexCoord);
+        
+        // --- OPCIÓ B: Barreja/Tintat (Multiplicació) ---
+        // Si la textura és blanca, es veu el gfrontColor. 
+        // Si la textura té color, es barreja (ex: Blau * Vermell = Negre/Lila).
+        // fragColor = texture(colorMap, gTexCoord) * gfrontColor;
+
+        // --- OPCIÓ C: Màscara d'Intensitat (Ignorar color de la textura) ---
+        // Fem servir la imatge només per donar "llum" o "forma", però forcem
+        // que el to sigui el del gfrontColor. Ideal si la textura és una peça de Lego
+        // gris/blanca i la vols pintar de colors.
+        // float intensity = texture(colorMap, gTexCoord).r; // Usem només el canal Vermell com a brillantor
+        // fragColor = vec4(gfrontColor.rgb * intensity, gfrontColor.a);
+    } 
+    else {
+        // Si és qualsevol altra cara, pintem el color gris base
+        fragColor = gfrontColor;
+    }
+}
+```
+
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
+### 15. Emetre un prisma de base triangular amb altura N*d (sigui d un uniform definit per l'usuari)
+
+``` glsl
+#version 330 core
+
+layout (triangles) in;
+// 3 (Base) + 3 (Tapa) + 12 (3 parets x 4 vèrtexs) = 18 vèrtexs mínim
+layout (triangle_strip, max_vertices = 20) out;
+
+in vec4 vfrontColor[];
+out vec4 gfrontColor;
+
+uniform mat4 modelViewProjectionMatrix;
+uniform float d; // Altura de l'extrusió (definit per l'usuari)
+
+void main() {
+    // --- 1. CÀLCUL DE LA DIRECCIÓ D'EXTRUSIÓ (Normal) ---
+    // Vectors de les arestes del triangle original
+    vec3 V0 = gl_in[0].gl_Position.xyz;
+    vec3 V1 = gl_in[1].gl_Position.xyz;
+    vec3 V2 = gl_in[2].gl_Position.xyz;
+
+    vec3 edge1 = V1 - V0;
+    vec3 edge2 = V2 - V0;
+    
+    // Normal del triangle (direcció perpendicular)
+    vec3 N = normalize(cross(edge1, edge2));
+
+    // Vector de desplaçament (Altura)
+    vec3 Offset = N * d;
+
+    // --- 2. DIBUIXAR LA BASE (Triangle Original) ---
+    // Normalment la base mira "cap avall", però aquí la farem tal qual
+    gfrontColor = vfrontColor[0]; // Color base
+    
+    gl_Position = modelViewProjectionMatrix * vec4(V0, 1.0); EmitVertex();
+    gl_Position = modelViewProjectionMatrix * vec4(V1, 1.0); EmitVertex();
+    gl_Position = modelViewProjectionMatrix * vec4(V2, 1.0); EmitVertex();
+    EndPrimitive();
+
+    // --- 3. DIBUIXAR LA TAPA (Triangle Desplaçat) ---
+    // Pintem la tapa una mica més clara per efecte visual (opcional)
+    gfrontColor = vfrontColor[0];
+
+    gl_Position = modelViewProjectionMatrix * vec4(V0 + Offset, 1.0); EmitVertex();
+    gl_Position = modelViewProjectionMatrix * vec4(V1 + Offset, 1.0); EmitVertex();
+    gl_Position = modelViewProjectionMatrix * vec4(V2 + Offset, 1.0); EmitVertex();
+    EndPrimitive();
+
+    // --- 4. DIBUIXAR LES PARETS LATERALS (3 Quads) ---
+    // Connectem cada aresta de la base amb l'aresta de la tapa
+    gfrontColor = vfrontColor[0];
+
+    for (int i = 0; i < 3; i++) {
+        int next = (i + 1) % 3; // Índex del següent vèrtex (0->1, 1->2, 2->0)
+
+        vec3 v_base_curr = gl_in[i].gl_Position.xyz;
+        vec3 v_base_next = gl_in[next].gl_Position.xyz;
+        
+        vec3 v_top_curr = v_base_curr + Offset;
+        vec3 v_top_next = v_base_next + Offset;
+
+        // Dibuixem un QUAD (Rectangle) usant Triangle Strip (Zig-Zag)
+        // Ordre: Base1 -> Base2 -> Top1 -> Top2
+        gl_Position = modelViewProjectionMatrix * vec4(v_base_curr, 1.0); EmitVertex();
+        gl_Position = modelViewProjectionMatrix * vec4(v_base_next, 1.0); EmitVertex();
+        gl_Position = modelViewProjectionMatrix * vec4(v_top_curr,  1.0); EmitVertex();
+        gl_Position = modelViewProjectionMatrix * vec4(v_top_next,  1.0); EmitVertex();
+        
+        EndPrimitive(); // Tanquem cada paret individualment
+    }
+}
+```
+
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 16. 
+
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+
 
 <hr style="border: 15px solid blue;">
 <hr style="border: 15px solid red;">
