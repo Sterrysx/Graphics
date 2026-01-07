@@ -1,19 +1,185 @@
 # GLarena Plugin Development - Quick Reference Cheat Sheet
 
 ## Table of Contents
-1. [Plugin Structure](#plugin-structure)
-2. [Header File Template](#header-file-template)
-3. [Implementation File Template](#implementation-file-template)
-4. [Shader Management](#shader-management)
-5. [Common Plugin Methods](#common-plugin-methods)
-6. [Matrices & Transformations](#matrices--transformations)
-7. [Texture Management](#texture-management)
-8. [Framebuffer & FBO](#framebuffer--fbo)
-9. [VAO/VBO Setup](#vaovbo-setup)
-10. [Shader Uniform Patterns](#shader-uniform-patterns)
-11. [Common Shader Code](#common-shader-code)
-12. [.pro File Setup](#pro-file-setup)
-13. [Quick Tips & Patterns](#quick-tips--patterns)
+1. [Important Libraries & Imports](#important-libraries--imports)
+2. [Plugin Structure](#plugin-structure)
+3. [Header File Template](#header-file-template)
+4. [Implementation File Template](#implementation-file-template)
+5. [Shader Management](#shader-management)
+6. [Common Plugin Methods](#common-plugin-methods)
+7. [Matrices & Transformations](#matrices--transformations)
+8. [Texture Management](#texture-management)
+9. [Framebuffer & FBO](#framebuffer--fbo)
+10. [VAO/VBO Setup](#vaovbo-setup)
+11. [Shader Uniform Patterns](#shader-uniform-patterns)
+12. [Common Shader Code](#common-shader-code)
+13. [.pro File Setup](#pro-file-setup)
+14. [Quick Tips & Patterns](#quick-tips--patterns)
+
+---
+
+## Important Libraries & Imports
+
+### Qt OpenGL Libraries
+Essential Qt libraries for OpenGL plugin development:
+
+```cpp
+// Core Plugin Interface
+#include "plugin.h"              // Base plugin interface - ALWAYS required
+#include "glwidget.h"            // Access to GLWidget instance and scene data
+
+// Qt OpenGL Core
+#include <QOpenGLShader>         // Individual shader objects (vertex, fragment, etc.)
+#include <QOpenGLShaderProgram>  // Linking and managing shader programs
+#include <QOpenGLFunctions>      // OpenGL function wrappers
+#include <QOpenGLContext>        // OpenGL context management
+#include <QOpenGLBuffer>         // VBO/Buffer object wrapper
+#include <QOpenGLVertexArrayObject>  // VAO wrapper
+#include <QOpenGLTexture>        // Texture loading and management
+#include <QOpenGLFramebufferObject>  // FBO wrapper (easier than raw OpenGL)
+
+// Qt Math & Transformations
+#include <QMatrix4x4>            // 4x4 transformation matrices (model, view, projection)
+#include <QMatrix3x3>            // 3x3 matrices (normal matrix)
+#include <QVector2D>             // 2D vector operations
+#include <QVector3D>             // 3D vector operations (positions, normals, colors)
+#include <QVector4D>             // 4D vectors (homogeneous coordinates, RGBA)
+#include <QQuaternion>           // Rotation quaternions
+
+// Qt Events
+#include <QKeyEvent>             // Keyboard input handling
+#include <QMouseEvent>           // Mouse input handling
+#include <QWheelEvent>           // Mouse wheel events
+
+// Qt Core Utilities
+#include <QString>               // String handling
+#include <QFile>                 // File I/O operations
+#include <QTextStream>           // Text file reading
+#include <QImage>                // Image loading (for textures)
+#include <QTime>                 // Timing and animation
+#include <QTimer>                // Event-based timing
+```
+
+### Standard C++ Libraries
+Commonly used standard libraries:
+
+```cpp
+#include <iostream>              // std::cout, std::cerr for debugging
+#include <vector>                // Dynamic arrays (for vertex data, indices)
+#include <cmath>                 // Math functions: sin, cos, tan, sqrt, pow, etc.
+#include <algorithm>             // std::min, std::max, std::clamp
+#include <string>                // std::string (less common, prefer QString)
+#include <memory>                // std::unique_ptr, std::shared_ptr
+#include <random>                // Random number generation
+
+using namespace std;             // Common practice in these plugins
+```
+
+### GLarena Specific Utilities
+Available through GLWidget:
+
+```cpp
+// Access via glwidget() pointer:
+GLWidget &g = *glwidget();
+
+// Commonly used methods:
+Scene* scene()                   // Access scene objects and data
+Camera* camera()                 // Get camera matrices and properties
+Box sceneBox()                   // Get scene bounding box
+Box objectBox(int obj)           // Get object bounding box
+void drawScene()                 // Draw the entire scene
+void drawObject(int obj)         // Draw a specific object
+Object& object(int obj)          // Access object data
+int numObjects()                 // Get number of objects in scene
+```
+
+### OpenGL Raw Functions
+When you need direct OpenGL calls:
+
+```cpp
+// Access through GLWidget
+GLWidget &g = *glwidget();
+g.makeCurrent();                 // ALWAYS call before OpenGL operations
+
+// Common OpenGL functions (use glFunction notation):
+glGenVertexArrays(1, &VAO);
+glBindVertexArray(VAO);
+glGenBuffers(1, &VBO);
+glBindBuffer(GL_ARRAY_BUFFER, VBO);
+glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, offset);
+glEnableVertexAttribArray(0);
+
+glGenTextures(1, &textureId);
+glBindTexture(GL_TEXTURE_2D, textureId);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+glGenerateMipmap(GL_TEXTURE_2D);
+
+glGenFramebuffers(1, &fbo);
+glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
+
+glEnable(GL_DEPTH_TEST);
+glEnable(GL_BLEND);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+glViewport(0, 0, width, height);
+
+glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+```
+
+### Quick Import Template for New Plugins
+
+**Minimal Plugin** (basic shader rendering):
+```cpp
+#include "plugin.h"
+#include "glwidget.h"
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
+#include <QMatrix4x4>
+#include <iostream>
+using namespace std;
+```
+
+**Standard Plugin** (most common use cases):
+```cpp
+#include "plugin.h"
+#include "glwidget.h"
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
+#include <QMatrix4x4>
+#include <QMatrix3x3>
+#include <QVector3D>
+#include <QKeyEvent>
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+```
+
+**Advanced Plugin** (textures, FBOs, custom geometry):
+```cpp
+#include "plugin.h"
+#include "glwidget.h"
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLFunctions>
+#include <QOpenGLTexture>
+#include <QOpenGLFramebufferObject>
+#include <QMatrix4x4>
+#include <QMatrix3x3>
+#include <QVector3D>
+#include <QVector4D>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QImage>
+#include <QTime>
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+```
 
 ---
 
@@ -2771,3 +2937,6 @@ make
 - [ ] Blend/depth test enabled/disabled correctly?
 
 ---
+
+**Last Updated:** January 2026  
+**Quick Reference for:** GLarena Plugin Development
