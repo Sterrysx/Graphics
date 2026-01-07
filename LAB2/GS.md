@@ -296,6 +296,19 @@ vec3 colorSegur = clamp(colorCalculat, vec3(0.0), vec3(1.0));
 ```
 
 
+## 0.7 Passar de [A,B] a [C,D]
+
+``` glsl
+// Funció per passar un valor del rang [inMin, inMax] al rang [outMin, outMax]
+float remap(float value, float inMin, float inMax, float outMin, float outMax) {
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+// Versió per a vec3 (útil per colors o posicions)
+vec3 remap(vec3 value, vec3 inMin, vec3 inMax, vec3 outMin, vec3 outMax) {
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+```
 
 <hr style="border: 15px solid blue;">
 <hr style="border: 15px solid red;">
@@ -975,56 +988,267 @@ EndPrimitive();
 ### 15. Emetre un quadrat en l'eix XY de costat L, centrat en l'eix de coordenades amb centre V
 
 ``` glsl
-// Suposem que tenim:
-// vec3 V;      -> El centre on vols el quadrat (en Eye Space)
-// float L;     -> La longitud del costat
+void emitQuad(vec3 Center, float L) {
+    vec3 offsets[4];
+    offsets[0] = vec3(-0.5, -0.5, 0.0);
+    offsets[1] = vec3( 0.5, -0.5, 0.0);
+    offsets[2] = vec3(-0.5,  0.5, 0.0);
+    offsets[3] = vec3( 0.5,  0.5, 0.0);
 
-// --- 1. DEFINICIÓ BASE (Centrat a 0,0,0 local) ---
-// Creem un quadrat UNITARI (1x1) al pla XY (Z=0).
-// Ordre Triangle Strip: Baix-Esq -> Baix-Dreta -> Dalt-Esq -> Dalt-Dreta
-vec3 offsets[4];
-offsets[0] = vec3(-0.5, -0.5, 0.0);
-offsets[1] = vec3( 0.5, -0.5, 0.0);
-offsets[2] = vec3(-0.5,  0.5, 0.0);
-offsets[3] = vec3( 0.5,  0.5, 0.0);
+    // (Opcional) Coordenades de textura per al quadrat
+    //vec2 UVs[4];
+    //UVs[0] = vec2(0, 0); UVs[1] = vec2(1, 0);
+    //UVs[2] = vec2(0, 1); UVs[3] = vec2(1, 1);
 
-//Exemple si volguessim pla XZ
-//offsets[0] = vec3(-0.5, 0.0, -0.5);
-//offsets[1] = vec3( 0.5, 0.0, -0.5);
-//offsets[2] = vec3(-0.5, 0.0,  0.5);
-//offsets[3] = vec3( 0.5, 0.0,  0.5);
+    for (int i = 0; i < 4; i++) {
+        vec3 pos = offsets[i]; // 1. CENTRAR (Ja ve centrat de l'array)
 
-// Bucle per generar els 4 vèrtexs
-for (int i = 0; i < 4; i++) {
-    
-    vec3 pos = offsets[i]; // 1. CENTRAR (Ja el tenim al 0,0,0 local)
+        // 2. ESCALAR
+        pos = pos * L; 
 
-    // 2. ESCALAR
-    // Multipliquem per la mida desitjada (L)
-    pos = pos * L;
+        // 3. ROTAR 
+        // 4. DESCENTRAR (No cal)
 
-    // 3. ROTAR 
-    // (No cal fer res perquè ja hem definit els offsets al pla XY)
+        // 5. MOURE (Translació Final)
+        // Sumem el centre on volem col·locar el quadrat
+        pos = pos + Center;
 
-    // 4. DESCENTRAR 
-    // (No cal perquè el pivot de l'escala era el propi centre)
+        // --- SORTIDES ---
+        gfrontColor = vec4(1.0, 0.0, 0.0, 1.0); // Exemple: Vermell
+        //gtexCoord = UVs[i]; // Passem UVs
 
-    // 5. MOURE (Translació Final)
-    // Movem el quadrat del (0,0,0) a la posició V
-    pos = pos + V;
+        // Transformació final (Assumint Center en Eye Space)
+        gl_Position = projectionMatrix * vec4(pos, 1.0);
+        
+        // Si Center fos Object Space:
+        // gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
 
-    // --- SORTIDA ---
-    // Com que V ja estava en Eye Space, només apliquem Projecció
-    gl_Position = projectionMatrix * vec4(pos, 1.0);
-    // Si V no està en Eye Space, multipliquem per modelViewProjectionMatrix
-    EmitVertex();
+        EmitVertex();
+    }
+    EndPrimitive();
 }
-EndPrimitive();
+
+// -----------------------------------------------------------------
+// MAIN
+// -----------------------------------------------------------------
+void main( void ) {
+    // Convertim el vèrtex d'entrada a Eye Space per fer de centre
+    vec3 V = (modelViewMatrix * gl_in[0].gl_Position).xyz;
+    
+    // Mida del costat
+    float Side = 2.0; 
+
+    emitQuad(V, Side);
+}
 ```
 
 <hr style="height: 2px; background-color: blue; border: none;">
 
-### 16. Emetre un cub de costat L, centrat en l'eix de coordenades amb centre V
+### 16. Emetre un quad (qualsevol quadrilàter) de color C delimitat per l'àre amb vèrtexs V0,V1,V2,V3
+
+``` glsl
+
+uniform mat4 modelViewProjectionMatrix;
+
+// -----------------------------------------------------------------
+// 1. FUNCIÓ AUXILIAR: Calcular el Centre (Centroide)
+//    Simplement és la mitjana aritmètica dels 4 punts.
+// -----------------------------------------------------------------
+vec3 getCentroid(vec3 v0, vec3 v1, vec3 v2, vec3 v3) {
+    return (v0 + v1 + v2 + v3) * 0.25; // Dividir per 4
+}
+
+// -----------------------------------------------------------------
+// 2. FUNCIÓ PRINCIPAL: Emetre el Quadrat donats 4 punts
+// -----------------------------------------------------------------
+void emitCustomQuad(vec3 v0, vec3 v1, vec3 v2, vec3 v3) {
+    
+    // A. Calculem el centre (el necessitem per passar-lo als outputs)
+    vec3 C = getCentroid(v0, v1, v2, v3);
+    
+    // B. Posem els vèrtexs en un array per iterar còmodament
+    // Assumim que v0..v3 ja venen en ordre Triangle Strip (Z)
+    vec3 P[4];
+    P[0] = v0; 
+    P[1] = v1; 
+    P[2] = v2; 
+    P[3] = v3;
+
+    // C. Bucle d'emissió
+    for (int i = 0; i < 4; i++) {
+        vec3 pos = P[i];
+
+        // --- OUTPUTS ---
+        gfrontColor = vec4(1.0, 1.0, 1.0, 1.0); // Color blanc (o el que vulguis)
+        gPosition = pos;  // La posició varia per vèrtex
+
+        // Transformació final
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+void main( void ) {
+    // (Aquests són exemples arbitraris)
+    vec3 A = vec3(-1.0, -1.0, 0.0);
+    vec3 B = vec3( 1.0, -1.0, 0.0);
+    vec3 C = vec3(-1.0,  1.0, 0.0);
+    vec3 D = vec3( 1.0,  1.0, 0.5); // Una mica aixecat (paral·lelogram 3D)
+
+    emitCustomQuad(A, B, C, D);
+}
+```
+
+
+
+### 17. Emetre un rectangle en l'eix XY de costats H i W, centrat en l'eix de coordenades amb centre V
+
+``` glsl
+// w = width (amplada en X)
+// h = height (alçada en Y)
+void emitRectangle(vec3 Center, float w, float h) {
+    
+    // --- 1. DEFINICIÓ BASE (Quadrat Unitari 1x1) ---
+    // Això no canvia mai. És la nostra "argila" base.
+    vec3 offsets[4];
+    offsets[0] = vec3(-0.5, -0.5, 0.0);
+    offsets[1] = vec3( 0.5, -0.5, 0.0);
+    offsets[2] = vec3(-0.5,  0.5, 0.0);
+    offsets[3] = vec3( 0.5,  0.5, 0.0);
+
+    for (int i = 0; i < 4; i++) {
+        
+        vec3 pos = offsets[i]; // 1. CENTRAR (0,0,0)
+
+        // --- 2. ESCALAR (AQUÍ ESTÀ EL CANVI) ---
+        // Multipliquem cada eix per la seva dimensió independent.
+        pos.x = pos.x * w; 
+        pos.y = pos.y * h;
+        // pos.z es queda igual (perquè és un pla 2D)
+
+        // 3. ROTAR (Opcional)
+
+        // 4. DESCENTRAR (No cal)
+
+        // 5. MOURE (Translació Final al Centre)
+        pos = pos + Center;
+
+        // --- SORTIDES ---
+        gfrontColor = vec4(1.0, 0.0, 0.0, 1.0); 
+
+        // Assumint que Center és Eye Space:
+        gl_Position = projectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+// -----------------------------------------------------------------
+// MAIN
+// -----------------------------------------------------------------
+void main( void ) {
+    vec3 V = (modelViewMatrix * gl_in[0].gl_Position).xyz;
+    
+    // Exemple: Un rectangle el doble d'ample que d'alt
+    float width = 2.0;
+    float height = 1.0;
+
+    emitRectangle(V, width, height);
+}
+```
+
+
+
+
+### 18. Emetre qualsevol figura a partir de les coordenades dels seus vèrtexs
+
+``` glsl
+#version 330 core
+
+layout(triangles) in;
+// Important: Ajustar max_vertices. 
+// Per un polígon de N costats, generem N triangles * 3 vèrtexs = 3*N.
+// Si acceptes fins a 10 costats -> 30 vertices.
+layout(triangle_strip, max_vertices = 30) out;
+
+out vec4 gfrontColor;
+uniform mat4 modelViewProjectionMatrix;
+
+// Definim un màxim (GLSL no permet arrays infinits)
+const int MAX_VERTS = 10;
+
+vec3 getCentroid(vec3 P[MAX_VERTS], int n) {
+    vec3 sum = vec3(0.0);
+    for(int i=0; i<n; i++) {
+        sum += P[i];
+    }
+    return sum / float(n);
+}
+
+// -----------------------------------------------------------------
+// 2. FUNCIÓ GENÈRICA: Emetre Polígon de N costats
+//    points: Array amb els vèrtexs en ordre (perímetre)
+//    n:      Nombre real de vèrtexs a fer servir
+//    color:  Color del polígon
+// -----------------------------------------------------------------
+void emitPolygon(vec3 points[MAX_VERTS], int n, vec4 color) {
+    
+    // Si tenim menys de 3 punts, no és un polígon
+    if (n < 3) return;
+
+    // A. Calculem el pivot central
+    vec3 C = getCentroid(points, n);
+
+    // B. Dibuixem triangles (Ventall) al voltant del centre
+    for(int i = 0; i < n; i++) {
+        
+        // Connectem l'actual amb el següent (mòdul n per tancar el cercle)
+        vec3 pCurrent = points[i];
+        vec3 pNext    = points[(i + 1) % n];
+
+        gfrontColor = color;
+
+        // Vèrtex 1: Centre
+        gl_Position = modelViewProjectionMatrix * vec4(C, 1.0);
+        EmitVertex();
+
+        // Vèrtex 2: Actual
+        gl_Position = modelViewProjectionMatrix * vec4(pCurrent, 1.0);
+        EmitVertex();
+
+        // Vèrtex 3: Següent
+        gl_Position = modelViewProjectionMatrix * vec4(pNext, 1.0);
+        EmitVertex();
+
+        EndPrimitive();
+    }
+}
+
+void main( void ) {
+    vec3 P[MAX_VERTS];
+    
+    P[0] = vec3( 0.0,  1.0, 0.0); // Dalt
+    P[1] = vec3(-0.9,  0.3, 0.0); // Esq-Dalt
+    P[2] = vec3(-0.6, -0.8, 0.0); // Esq-Baix
+    P[3] = vec3( 0.6, -0.8, 0.0); // Dreta-Baix
+    P[4] = vec3( 0.9,  0.3, 0.0); // Dreta-Dalt
+    
+    emitPolygon(P, 5, vec4(1, 0, 0, 1));
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+### 19. Emetre un cub de costat L, centrat en l'eix de coordenades amb centre V
 
 ``` glsl
 uniform mat4 projectionMatrix;
@@ -1098,7 +1322,7 @@ void main( void )
 
 <hr style="height: 2px; background-color: blue; border: none;">
 
-### 17. Enviar un flag al FS per a que texturitzi certes parts, en l'exemple del cub, texturitzar la cara Top.
+### 20. Enviar un flag al FS per a que texturitzi certes parts, en l'exemple del cub, texturitzar la cara Top.
 
 ``` glsl
 #version 330 core
@@ -1170,6 +1394,225 @@ void main( void )
             EmitVertex();
         }
         EndPrimitive(); 
+    }
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 21. Emetre un cub de dimensions X, Y, Z a partir de la posició mínima
+
+``` glsl
+vec3 getCenter(vec3 minCorner, vec3 size) {
+    return minCorner + (size * 0.5);
+}
+
+// 2. HELPER: Calcular els 8 Vèrtexs (Corners)
+void getVertices(vec3 minCorner, vec3 size, out vec3 v[8]) {
+    v[0] = minCorner;                                 // 000
+    v[1] = minCorner + vec3(size.x, 0.0, 0.0);        // 100
+    v[2] = minCorner + vec3(0.0, size.y, 0.0);        // 010
+    v[3] = minCorner + vec3(size.x, size.y, 0.0);     // 110
+    v[4] = minCorner + vec3(0.0, 0.0, size.z);        // 001
+    v[5] = minCorner + vec3(size.x, 0.0, size.z);     // 101
+    v[6] = minCorner + vec3(0.0, size.y, size.z);     // 011
+    v[7] = minCorner + size;                          // 111
+}
+
+// 3. HELPER: Emetre una Cara
+void emitFace(int faceID, vec3 v[8], vec3 center, vec4 color) {
+    
+    // Taula de topologia: Quins 4 vèrtexs formen cada cara?
+    // Ordre Triangle Strip per cada cara.
+    // 0:Front, 1:Back, 2:Right, 3:Left, 4:Top, 5:Bottom
+    const int indices[24] = int[](
+        4, 5, 6, 7,  // Front (+Z)
+        1, 0, 3, 2,  // Back  (-Z) -> Invertit per mirar enfora
+        5, 1, 7, 3,  // Right (+X)
+        0, 4, 2, 6,  // Left  (-X)
+        6, 7, 2, 3,  // Top   (+Y)
+        0, 1, 4, 5   // Bottom(-Y)
+    );
+
+    // Bucle dels 4 vèrtexs de la cara
+    for(int i = 0; i < 4; i++) {
+        // Mirem a la taula quin vèrtex toca
+        int vIndex = indices[faceID * 4 + i];
+        vec3 pos = v[vIndex];
+
+        // Assignem Outputs
+        gfrontColor = color;
+        gCenter     = center;
+        gPosition   = pos;
+        
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+void emitBox(vec3 minCorner, vec3 size, vec4 colors[6]) {
+    
+    // A. Calculem dades comunes
+    vec3 center = getCenter(minCorner, size);
+    
+    vec3 V[8];
+    getVertices(minCorner, size, V);
+
+    // B. Bucle net de 6 cares
+    for(int face = 0; face < 6; face++) {
+        emitFace(face, V, center, colors[face]);
+    }
+}
+
+void main( void ) {
+    
+    // Exemple d'ús
+    vec3 origin = gl_in[0].gl_Position.xyz;
+    vec3 size   = vec3(1.0, 1.0, 1.0); // Cub unitari
+    
+    // Definim colors (o passem-los com uniform/atribut)
+    vec4 colors[6];
+    colors[0] = vec4(1,0,0,1); // Front
+    colors[1] = vec4(0,1,0,1); // Back
+    colors[2] = vec4(0,0,1,1); // Right
+    colors[3] = vec4(1,1,0,1); // Left
+    colors[4] = vec4(1,0,1,1); // Top
+    colors[5] = vec4(0,1,1,1); // Bottom
+
+    emitBox(origin, size, colors);
+}
+```
+
+Com fer les mides en relacio al % de la boundingBox.
+
+``` glsl
+void main( void ) {
+    
+    // 1. Calculem la mida TOTAL de la Bounding Box original
+    vec3 totalBBSize = boundingBoxMax - boundingBoxMin;
+
+    // 2. Definim els percentatges que volem per cada eix
+    // Exemple: 20% en X (0.2), 50% en Y (0.5), 100% en Z (1.0)
+    vec3 factors = vec3(0.2, 0.5, 1.0);
+
+    // 3. Calculem la NOVA MIDA (Size) aplicant els factors
+    vec3 finalSize = totalBBSize * factors;
+
+    // 4. Calculem on ha de començar (minCorner) perquè quedi CENTRADA
+    //    Centre original de la BB - Meitat de la nova mida
+    vec3 centerBB = (boundingBoxMin + boundingBoxMax) / 2.0;
+    vec3 finalOrigin = centerBB - (finalSize * 0.5);
+
+    // Si volguessis que comencés a la cantonada original (sense centrar):
+    // vec3 finalOrigin = boundingBoxMin;
+
+    // Definim colors...
+    vec4 colors[6]; 
+    colors[0] = vec4(1,0,0,1); colors[1] = vec4(0,1,0,1);
+    colors[2] = vec4(0,0,1,1); colors[3] = vec4(1,1,0,1);
+    colors[4] = vec4(1,0,1,1); colors[5] = vec4(0,1,1,1);
+
+    // 5. Cridem la teva funció emitBox
+    // Nota: Ho fem només 1 cop (si som al primer vèrtex) per no dibuixar-ho mil vegades
+    if (gl_PrimitiveIDIn == 0) {
+        emitBox(finalOrigin, finalSize, colors);
+    }
+}
+```
+
+<hr style="height: 2px; background-color: blue; border: none;">
+
+### 22. Emetre un cub de dimensions X,Y,Z a partir del centre
+
+``` glsl
+
+// 1. HELPER: Calcular els 8 Vèrtexs des del CENTRE
+//    Usem el "radi" (meitat de la mida)
+void getVerticesFromCenter(vec3 center, vec3 size, out vec3 v[8]) {
+    vec3 r = size * 0.5; // Radi (half-extent)
+
+    // Mantenim l'ordre binari (X, Y, Z) per no trencar els índexs de les cares
+    // 0 = negatiu, 1 = positiu
+    v[0] = center + vec3(-r.x, -r.y, -r.z); // 000
+    v[1] = center + vec3( r.x, -r.y, -r.z); // 100
+    v[2] = center + vec3(-r.x,  r.y, -r.z); // 010
+    v[3] = center + vec3( r.x,  r.y, -r.z); // 110
+    v[4] = center + vec3(-r.x, -r.y,  r.z); // 001
+    v[5] = center + vec3( r.x, -r.y,  r.z); // 101
+    v[6] = center + vec3(-r.x,  r.y,  r.z); // 011
+    v[7] = center + vec3( r.x,  r.y,  r.z); // 111
+}
+
+// 2. HELPER: Emetre una Cara (IDÈNTIC A L'EXERCICI 21)
+void emitFace(int faceID, vec3 v[8], vec3 center, vec4 color) {
+    const int indices[24] = int[](
+        4, 5, 6, 7,  // Front
+        1, 0, 3, 2,  // Back
+        5, 1, 7, 3,  // Right
+        0, 4, 2, 6,  // Left
+        6, 7, 2, 3,  // Top
+        0, 1, 4, 5   // Bottom
+    );
+
+    for(int i = 0; i < 4; i++) {
+        int vIndex = indices[faceID * 4 + i];
+        vec3 pos = v[vIndex];
+
+        gfrontColor = color;
+        gCenter     = center; 
+        gPosition   = pos;
+        
+        gl_Position = modelViewProjectionMatrix * vec4(pos, 1.0);
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+
+// 3. FUNCIÓ PRINCIPAL: Cub des del Centre
+void emitBoxFromCenter(vec3 center, vec3 size, vec4 colors[6]) {
+    
+    vec3 V[8];
+    getVerticesFromCenter(center, size, V);
+
+    for(int face = 0; face < 6; face++) {
+        emitFace(face, V, center, colors[face]);
+    }
+}
+
+void main( void ) {
+    
+    // 1. Calculem el CENTRE de la Bounding Box original
+    vec3 centerBB = (boundingBoxMin + boundingBoxMax) / 2.0;
+
+    // 2. Calculem la mida TOTAL original
+    vec3 totalSize = boundingBoxMax - boundingBoxMin;
+
+    // 3. Definim els factors d'escala (%)
+    // Exemple: 20% ample (X), 50% alt (Y), 20% fons (Z)
+    vec3 factors = vec3(0.2, 0.5, 0.2);
+    
+    // 4. Mida final del nou cub
+    vec3 finalSize = totalSize * factors;
+
+    // Colors basats en normals (X=Vermell, Y=Verd, Z=Blau)
+    vec4 colors[6];
+    // Eix Z (Front/Back) -> Blaus
+    colors[0] = vec4(0.0, 0.0, 1.0, 1.0);   // Front (+Z) Blau pur
+    colors[1] = vec4(0.0, 0.0, 0.5, 1.0);   // Back  (-Z) Blau fosc
+    
+    // Eix X (Right/Left) -> Vermells
+    colors[2] = vec4(1.0, 0.0, 0.0, 1.0);   // Right (+X) Vermell pur
+    colors[3] = vec4(0.5, 0.0, 0.0, 1.0);   // Left  (-X) Vermell fosc
+    
+    // Eix Y (Top/Bottom) -> Verds
+    colors[4] = vec4(0.0, 1.0, 0.0, 1.0);   // Top   (+Y) Verd pur
+    colors[5] = vec4(0.0, 0.5, 0.0, 1.0);   // Bottom(-Y) Verd fosc
+
+    // 5. Cridem la funció (Només al primer vèrtex per eficiència)
+    if (gl_PrimitiveIDIn == 0) {
+        // Fixa't que ara passem 'centerBB' directament, sense calcular offsets estranys
+        emitBoxFromCenter(centerBB, finalSize, colors);
     }
 }
 ```
